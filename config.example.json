@@ -1,0 +1,366 @@
+{
+  "site": {
+    "name": "LeeupTV",
+    "announcement": "本站仅接入你有权使用的视频源，不存储任何视频文件，只提供搜索、记录和播放入口。",
+    "disclaimer": "所有内容来自已配置的第三方接口，本站不上传、不制作、不保存视频；请遵守当地法律法规，仅用于学习交流。",
+    "qq_group_url": "https://qm.qq.com/q/LFmzAHiqYQ"
+  },
+  "database": {
+    "path": "data/rikka_tv.sqlite3"
+  },
+  "cache_time": 7200,
+  "search_max_page": 3,
+  "speed_test": {
+    "enabled": true,
+    "prefer_by_default": true,
+    "timeout_seconds": 6,
+    "sample_bytes": 524288,
+    "max_workers": 6,
+    "manual_max_workers": 6,
+    "browser_concurrency": 4,
+    "browser_speed_cap_kbps": 12288,
+    "score_speed_weight": 0.7,
+    "score_quality_weight": 0.2,
+    "score_latency_weight": 0.1,
+    "max_candidates": 8,
+    "cache_seconds": 21600,
+    "failure_cache_seconds": 1800,
+    "search_max_page": 1,
+    "manual_search_max_page": 3,
+    "shortlist_limit": 12,
+    "fallback_limit": 8,
+    "recommend_min_tests": 1,
+    "recommend_source_probe_limit": 5
+  },
+  "player": {
+    "skip_intro_seconds": 90,
+    "skip_outro_seconds": 90
+  },
+  "douban": {
+    "base_url": "https://m.douban.com",
+    "timeout_seconds": 10
+  },
+  "recommendations": {
+    "cache_seconds": 1800,
+    "section_workers": 5,
+    "sections": [
+      {
+        "key": "hot_movie",
+        "title": "热门电影",
+        "level1": "电影",
+        "level2": "热门电影",
+        "method": "recent_hot",
+        "kind": "movie",
+        "category": "热门",
+        "type": "全部",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "new_movie",
+        "title": "最新电影",
+        "level1": "电影",
+        "level2": "最新电影",
+        "method": "tag",
+        "kind": "movie",
+        "tag": "最新",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "top_movie",
+        "title": "高分电影",
+        "level1": "电影",
+        "level2": "高分电影",
+        "method": "recommend",
+        "kind": "movie",
+        "sort": "S",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "science_movie",
+        "title": "科幻电影",
+        "level1": "电影",
+        "level2": "科幻电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "科幻",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "action_movie",
+        "title": "动作电影",
+        "level1": "电影",
+        "level2": "动作电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "动作",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "comedy_movie",
+        "title": "喜剧电影",
+        "level1": "电影",
+        "level2": "喜剧电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "喜剧",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "romance_movie",
+        "title": "爱情电影",
+        "level1": "电影",
+        "level2": "爱情电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "爱情",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "suspense_movie",
+        "title": "悬疑电影",
+        "level1": "电影",
+        "level2": "悬疑电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "悬疑",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "horror_movie",
+        "title": "恐怖电影",
+        "level1": "电影",
+        "level2": "恐怖电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "恐怖",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "chinese_movie",
+        "title": "华语电影",
+        "level1": "电影",
+        "level2": "华语电影",
+        "method": "recommend",
+        "kind": "movie",
+        "region": "华语",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "western_movie",
+        "title": "欧美电影",
+        "level1": "电影",
+        "level2": "欧美电影",
+        "method": "recommend",
+        "kind": "movie",
+        "region": "欧美",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "japanese_movie",
+        "title": "日本电影",
+        "level1": "电影",
+        "level2": "日本电影",
+        "method": "recommend",
+        "kind": "movie",
+        "region": "日本",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "korean_movie",
+        "title": "韩国电影",
+        "level1": "电影",
+        "level2": "韩国电影",
+        "method": "recommend",
+        "kind": "movie",
+        "region": "韩国",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "hot_tv",
+        "title": "热门剧集",
+        "level1": "剧集",
+        "level2": "热门剧集",
+        "method": "recent_hot",
+        "kind": "tv",
+        "category": "tv",
+        "type": "tv",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "domestic_tv",
+        "title": "国产剧",
+        "level1": "剧集",
+        "level2": "国产剧",
+        "method": "recommend",
+        "kind": "tv",
+        "region": "中国大陆",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "western_tv",
+        "title": "欧美剧",
+        "level1": "剧集",
+        "level2": "欧美剧",
+        "method": "recommend",
+        "kind": "tv",
+        "region": "欧美",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "korean_tv",
+        "title": "韩剧",
+        "level1": "剧集",
+        "level2": "韩剧",
+        "method": "recommend",
+        "kind": "tv",
+        "region": "韩国",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "japanese_tv",
+        "title": "日剧",
+        "level1": "剧集",
+        "level2": "日剧",
+        "method": "recommend",
+        "kind": "tv",
+        "region": "日本",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "suspense_tv",
+        "title": "悬疑剧",
+        "level1": "剧集",
+        "level2": "悬疑剧",
+        "method": "recommend",
+        "kind": "tv",
+        "category": "悬疑",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "romance_tv",
+        "title": "爱情剧",
+        "level1": "剧集",
+        "level2": "爱情剧",
+        "method": "recommend",
+        "kind": "tv",
+        "category": "爱情",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "costume_tv",
+        "title": "古装剧",
+        "level1": "剧集",
+        "level2": "古装剧",
+        "method": "recommend",
+        "kind": "tv",
+        "category": "古装",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "crime_tv",
+        "title": "犯罪剧",
+        "level1": "剧集",
+        "level2": "犯罪剧",
+        "method": "recommend",
+        "kind": "tv",
+        "category": "犯罪",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "anime",
+        "title": "动漫新番",
+        "level1": "动漫",
+        "level2": "动漫新番",
+        "method": "recommend",
+        "kind": "tv",
+        "category": "动画",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "anime_movie",
+        "title": "动画电影",
+        "level1": "动漫",
+        "level2": "动画电影",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "动画",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "variety",
+        "title": "综艺娱乐",
+        "level1": "综艺",
+        "level2": "综艺娱乐",
+        "method": "recent_hot",
+        "kind": "tv",
+        "category": "show",
+        "type": "show",
+        "limit": 12,
+        "page_limit": 60
+      },
+      {
+        "key": "documentary",
+        "title": "纪录片",
+        "level1": "纪录片",
+        "level2": "纪录片",
+        "method": "recommend",
+        "kind": "movie",
+        "category": "纪录片",
+        "sort": "U",
+        "limit": 12,
+        "page_limit": 60
+      }
+    ]
+  },
+  "api_site": {
+    "my_source": {
+      "name": "我的合法视频源",
+      "api": "https://your-domain.example/api.php/provide/vod",
+      "disabled": false
+    }
+  }
+}

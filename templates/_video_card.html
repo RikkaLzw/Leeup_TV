@@ -1,0 +1,18 @@
+<article class="media-card">
+  <a class="poster" href="{{ url_for('detail', source=item.source, video_id=item.id) }}">
+    {% if item.poster %}
+      <img src="{{ item.poster }}" alt="{{ item.title }}" loading="lazy" data-raw-poster="{{ item.raw_poster or '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
+      <span class="poster-fallback">{{ item.title[:4] }}</span>
+    {% else %}
+      <span class="poster-fallback">{{ item.title[:4] }}</span>
+    {% endif %}
+  </a>
+  <div class="card-body">
+    <a class="card-title" href="{{ url_for('detail', source=item.source, video_id=item.id) }}">{{ item.title }}</a>
+    <div class="card-meta">
+      <span>{{ item.source_name }}</span>
+      {% if item.year %}<span>{{ item.year }}</span>{% endif %}
+      {% if item.episodes %}<span>{{ item.episodes|length }} 集</span>{% endif %}
+    </div>
+  </div>
+</article>

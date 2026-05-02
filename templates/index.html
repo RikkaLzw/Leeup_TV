@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if not configured_sources %}
+    <div class="empty-state">
+      还没有启用视频源。请在 <code>config.json</code> 的 <code>api_site</code> 中配置你有权使用的 MacCMS 接口。
+    </div>
+  {% endif %}
+
+  <section class="recommend-browser">
+    <div class="recommend-filters" id="recommendFilters" aria-label="推荐筛选">
+      <div class="filter-row" data-filter-level="level1">
+        <span>类型</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" type="button" data-filter-level="level1" data-filter-value="all">全部</button>
+        </div>
+      </div>
+      <div class="filter-row" data-filter-level="level2">
+        <span>分类</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" type="button" data-filter-level="level2" data-filter-value="all">全部</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if history %}
+    <section class="compact-band">
+      <h2>搜索历史</h2>
+      <div class="chip-list">
+        {% for keyword in history %}
+          <a class="chip" href="{{ url_for('search') }}?q={{ keyword|urlencode }}">{{ keyword }}</a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="section continue-section" id="continueSection" {% if not records %}hidden{% endif %}>
+      <div class="section-title">
+        <div>
+          <h2>继续观看</h2>
+          <p class="muted">自动记录播放进度</p>
+        </div>
+        <button class="secondary-button" id="clearContinueButton" type="button">清空</button>
+      </div>
+      <div class="media-grid" id="continueGrid">
+        {% for item in records %}
+          {% include "_record_card.html" %}
+        {% endfor %}
+      </div>
+    </section>
+
+  {% for section in recommend_sections %}
+    <section
+      class="section recommend-section"
+      id="section-{{ section.key }}"
+      data-section-key="{{ section.key }}"
+      data-level1="{{ section.level1 }}"
+      data-level2="{{ section.level2 }}"
+    >
+      <div class="section-title">
+        <div>
+          <h2>{{ section.title }}</h2>
+        </div>
+      </div>
+      {% if section["items"] %}
+        <div class="media-grid">
+          {% for item in section["items"] %}
+            {% if item.provider == "douban" %}
+              {% include "_douban_card.html" %}
+            {% else %}
+              {% include "_video_card.html" %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">这个栏目暂时没有推荐结果。</div>
+      {% endif %}
+    </section>
+  {% endfor %}
+  <script>
+    window.RIKKA_POSTER_MAP = {{ poster_map|default({})|tojson }};
+  </script>
+  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ url_for('static', path='/js/continue.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ url_for('static', path='/js/recommend.js') }}?v={{ asset_version }}"></script>
+{% endblock %}

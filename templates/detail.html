@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+  <section class="detail-layout">
+    <div class="poster-frame">
+      {% if item.poster %}
+        <img src="{{ item.poster }}" alt="{{ item.title }}" data-raw-poster="{{ item.raw_poster or '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.innerHTML = '<div class=&quot;poster-placeholder&quot;>{{ item.title[:1] }}</div>');">
+      {% else %}
+        <div class="poster-placeholder">{{ item.title[:1] }}</div>
+      {% endif %}
+    </div>
+    <div class="detail-main">
+      <div class="meta-row">
+        <span>{{ item.source_name }}</span>
+        {% if item.year %}<span>{{ item.year }}</span>{% endif %}
+        {% if item.class %}<span>{{ item.class }}</span>{% endif %}
+      </div>
+      <h1>{{ item.title }}</h1>
+      {% if item.desc %}
+        <p class="description">{{ item.desc }}</p>
+      {% endif %}
+      <div class="action-row">
+        <a class="primary-button" href="{{ url_for('play', source=item.source, video_id=item.id) }}?prefer=1">优选播放</a>
+        <a class="secondary-button" href="{{ url_for('play', source=item.source, video_id=item.id) }}?prefer=0">直接播放</a>
+      </div>
+      {% if item.episodes|length > 1 %}
+        <h2>选集</h2>
+        <div class="episode-grid">
+          {% for url in item.episodes %}
+            <a href="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ loop.index0 }}&prefer=1">
+              {{ loop.index }}
+            </a>
+          {% endfor %}
+        </div>
+      {% elif not item.episodes %}
+        <div class="empty-state">这个条目暂时没有解析到播放地址。</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
+{% endblock %}

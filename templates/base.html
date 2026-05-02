@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ site.name or "LeeupTV" }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}?v={{ asset_version }}">
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-mark">R</span>
+        <span>{{ site.name or "LeeupTV" }}</span>
+      </a>
+      <form class="top-search" action="{{ url_for('search') }}" method="get">
+        <input type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
+        <button type="submit">搜索</button>
+      </form>
+    </header>
+
+    <div class="mobile-search-panel" id="mobileSearchPanel" hidden>
+      <form class="mobile-bottom-search" action="{{ url_for('search') }}" method="get">
+        <input id="mobileSearchInput" type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
+        <button type="submit">搜索</button>
+      </form>
+    </div>
+
+    {% if show_mobile_nav %}
+      <nav class="mobile-category-nav" aria-label="移动端分类">
+        {% for item in mobile_nav_items %}
+          {% if item.kind == "search" %}
+            <button class="mobile-category-link{% if active_mobile_level == 'search' %} active{% endif %}" id="mobileSearchToggle" type="button" aria-controls="mobileSearchPanel" aria-expanded="false">
+              {% include "_mobile_nav_icon.html" %}
+              <span>{{ item.label }}</span>
+            </button>
+          {% else %}
+            <a class="mobile-category-link{% if active_mobile_level == item.level1 %} active{% endif %}" href="{{ url_for('browse', level1=item.level1) }}">
+              {% include "_mobile_nav_icon.html" %}
+              <span>{{ item.label }}</span>
+            </a>
+          {% endif %}
+        {% endfor %}
+      </nav>
+    {% endif %}
+
+    <main class="page">
+      {% if messages %}
+        <div class="flash-list">
+          {% for item in messages %}
+            <div class="flash {{ item.category }}">{{ item.message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+
+    {% if is_home %}
+      <button class="notice-fab" id="siteNoticeOpen" type="button">公告</button>
+      <div class="notice-modal" id="siteNoticeModal" hidden>
+        <div class="notice-backdrop" data-notice-close></div>
+        <section class="notice-dialog" role="dialog" aria-modal="true" aria-labelledby="siteNoticeTitle">
+          <div class="notice-dialog-header">
+            <h2 id="siteNoticeTitle">公告与免责声明</h2>
+            <button class="icon-button" type="button" data-notice-close aria-label="关闭">×</button>
+          </div>
+          <div class="notice-dialog-body">
+            <div>
+              <strong>公告</strong>
+              <p>{{ site.announcement }}</p>
+            </div>
+            <div>
+              <strong>免责声明</strong>
+              <p>{{ site.disclaimer }}</p>
+            </div>
+          </div>
+          <a class="primary-button" href="{{ site.qq_group_url }}" target="_blank" rel="noopener noreferrer">加入 QQ 群</a>
+        </section>
+      </div>
+      <script src="{{ url_for('static', path='/js/notice.js') }}?v={{ asset_version }}"></script>
+    {% endif %}
+    <script src="{{ url_for('static', path='/js/mobile_nav.js') }}?v={{ asset_version }}"></script>
+  </body>
+</html>

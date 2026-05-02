@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ browse.level1 }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+  <section class="section browse-header">
+    <div class="section-title">
+      <div>
+        <h1>{{ browse.level1 }}</h1>
+      </div>
+    </div>
+    <div class="recommend-filters browse-filters" id="recommendFilters" aria-label="{{ browse.level1 }}筛选">
+      <div class="filter-row" data-filter-level="level2">
+        <span>分类</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" type="button" data-filter-level="level2" data-filter-value="all">全部</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% for section in browse.sections %}
+    <section
+      class="section recommend-section"
+      id="section-{{ section.key }}"
+      data-section-key="{{ section.key }}"
+      data-level1="{{ section.level1 }}"
+      data-level2="{{ section.level2 }}"
+    >
+      <div class="section-title">
+        <div>
+          <h2>{{ section.title }}</h2>
+        </div>
+      </div>
+      {% if section["items"] %}
+        <div class="media-grid paged-grid" data-page-size="12" data-preview-size="12">
+          {% for item in section["items"] %}
+            <div class="paged-item">
+              {% if item.provider == "douban" %}
+                {% include "_douban_card.html" %}
+              {% else %}
+                {% include "_video_card.html" %}
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="pagination" hidden></div>
+      {% else %}
+        <div class="empty-state">这个分类暂时没有推荐结果。</div>
+      {% endif %}
+    </section>
+  {% endfor %}
+
+  <script>
+    window.RIKKA_POSTER_MAP = {{ poster_map|default({})|tojson }};
+  </script>
+  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ url_for('static', path='/js/recommend.js') }}?v={{ asset_version }}"></script>
+{% endblock %}

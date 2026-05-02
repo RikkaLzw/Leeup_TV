@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}播放 {{ item.title }} - {{ site.name }}{% endblock %}
+
+{% block head %}
+  <script src="{{ url_for('static', path='/vendor/artplayer/artplayer.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ url_for('static', path='/vendor/hls/hls.min.js') }}?v={{ asset_version }}"></script>
+{% endblock %}
+
+{% block content %}
+  <section class="player-layout">
+    <div class="player-main">
+      <div class="video-shell">
+        <div id="player" class="art-player"></div>
+        <div class="player-loading-hint" id="playerLoadingHint" hidden>正在加载视频</div>
+        <div class="player-gesture-hint" id="playerGestureHint" hidden>3x</div>
+        <div class="player-mobile-actions" aria-label="播放操作">
+          {% if item.episodes|length > 1 %}
+            <button type="button" data-player-sheet="episodes">选集</button>
+          {% endif %}
+          <button type="button" data-player-sheet="sources">换源</button>
+        </div>
+        <div class="player-quick-controls" aria-label="播放辅助控制">
+          <button type="button" id="skipIntroButton">跳片头</button>
+          <button type="button" id="skipOutroButton">跳片尾</button>
+          <span id="qualityBadge">清晰度 未知</span>
+        </div>
+      </div>
+      <div class="player-info">
+        <div>
+          <div class="meta-row" id="activeMeta">
+            <span>{{ item.source_name }}</span>
+            {% if item.year %}<span>{{ item.year }}</span>{% endif %}
+          </div>
+          <h1 id="activeTitle">{{ item.title }}</h1>
+        </div>
+      </div>
+      {% if item.desc %}
+        <p class="description" id="activeDesc">{{ item.desc }}</p>
+      {% endif %}
+    </div>
+
+    <aside class="player-sidebar{% if item.episodes|length <= 1 %} no-episodes{% endif %}" id="playerSheet">
+      <div class="player-sheet-handle" aria-hidden="true"></div>
+      <button class="player-sheet-close" id="playerSheetClose" type="button" aria-label="关闭浮层">×</button>
+      {% if item.episodes|length > 1 %}
+        <div class="mobile-player-tabs" role="tablist" aria-label="播放控制">
+          <button class="mobile-player-tab active" type="button" data-mobile-panel="episodes" role="tab" aria-selected="true">选集</button>
+          <button class="mobile-player-tab" type="button" data-mobile-panel="sources" role="tab" aria-selected="false">换源</button>
+        </div>
+      {% endif %}
+
+      <div class="panel compact prefer-panel">
+        <div class="section-title small">
+          <h2>播放优选</h2>
+          <span id="preferStatus">{{ "站内推荐" if item.recommended_by_metrics else ("手动测速" if prefer_enabled else "直连播放") }}</span>
+        </div>
+        <button class="speed-test-button" id="speedTestButton" type="button" {% if not prefer_enabled %}disabled{% endif %}>测速</button>
+        <div id="candidateList" class="candidate-list"></div>
+      </div>
+
+      {% if item.episodes|length > 1 %}
+        <div class="panel compact episode-panel">
+          <div class="section-title small">
+            <h2>选集</h2>
+            <span id="episodeCount">{{ item.episodes|length }} 集</span>
+          </div>
+          <div class="episode-grid side" id="episodeList"></div>
+        </div>
+      {% endif %}
+    </aside>
+  </section>
+
+  <script>
+    window.PLAYER_CONFIG = {{ {
+      "detail": item,
+      "originalDetail": original_item,
+      "episode": episode,
+      "record": record,
+      "preferEnabled": prefer_enabled,
+      "sourceMetrics": source_metrics,
+      "speedTestConcurrency": speed_test_concurrency,
+      "browserSpeedCapKbps": browser_speed_cap_kbps,
+      "playerOptions": player_options
+    }|tojson }};
+  </script>
+  <script src="{{ url_for('static', path='/js/player.js') }}?v={{ asset_version }}"></script>
+{% endblock %}

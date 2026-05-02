@@ -1,0 +1,22 @@
+<article class="media-card" data-continue-key="{{ (item.search_title or item.title)|lower|replace(' ', '') }}">
+  <a class="poster" href="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ item.episode_index }}&prefer=1">
+    {% if item.cover %}
+      <img src="{{ item.cover }}" alt="{{ item.title }}" loading="lazy" data-raw-poster="{{ item.raw_poster or '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
+      <span class="poster-fallback">{{ item.title[:4] }}</span>
+    {% else %}
+      <span class="poster-fallback">{{ item.title[:4] }}</span>
+    {% endif %}
+    {% if item.total_time %}
+      <span class="progress-badge">{{ ((item.play_time or 0) / item.total_time * 100)|round|int }}%</span>
+    {% endif %}
+  </a>
+  <div class="card-body">
+    <a class="card-title" href="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ item.episode_index }}&prefer=1">{{ item.title }}</a>
+    <div class="card-meta">
+      <span>第 {{ (item.episode_index or 0) + 1 }} 集</span>
+      {% if item.total_time %}
+        <span>{{ ((item.play_time or 0) / item.total_time * 100)|round|int }}%</span>
+      {% endif %}
+    </div>
+  </div>
+</article>

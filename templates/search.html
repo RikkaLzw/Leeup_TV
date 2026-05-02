@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}搜索 {{ q }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-title">
+      <div>
+        <h1>搜索结果</h1>
+        {% if resolved_from %}
+          <p class="muted">来自豆瓣推荐：{{ resolved_from.title }}{% if resolved_from.year %} · {{ resolved_from.year }}{% endif %}</p>
+        {% endif %}
+        {% if q %}
+          <p class="muted">关键词：{{ q }}，共 {{ results|length }} 条结果</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if failed %}
+      <div class="notice">
+        {% for item in failed %}
+          <span>{{ item.name }}：{{ item.error }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if results %}
+      <div class="media-grid">
+        {% for item in results %}
+          {% include "_video_card.html" %}
+        {% endfor %}
+      </div>
+    {% elif q %}
+      <div class="empty-state">没有搜到结果。可以检查视频源配置，或换一个关键词。</div>
+    {% else %}
+      <div class="empty-state">输入关键词开始搜索。</div>
+    {% endif %}
+  </section>
+  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
+{% endblock %}

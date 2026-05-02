@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.title }} - {{ site.name }}{% endblock %}
+
+{% block content %}
+  <section class="section">
+    <div class="section-title">
+      <div>
+        <h1>{{ category.title }}</h1>
+        <p class="muted">精选内容，点击刷新可更新推荐。</p>
+      </div>
+      <a class="secondary-button" href="{{ url_for('category', category_key=category.key) }}?refresh=1">刷新</a>
+    </div>
+    {% if category["items"] %}
+      <div class="media-grid">
+        {% for item in category["items"] %}
+          {% if item.provider == "douban" %}
+            {% include "_douban_card.html" %}
+          {% else %}
+            {% include "_video_card.html" %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">这个分类暂时没有推荐结果。</div>
+    {% endif %}
+  </section>
+  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
+{% endblock %}
