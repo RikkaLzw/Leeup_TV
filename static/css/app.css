@@ -690,6 +690,62 @@ input {
   display: none;
 }
 
+.player-control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(33, 41, 38, 0.08);
+}
+
+.player-control-bar button,
+.player-rate-control,
+.player-quality-inline {
+  min-height: 34px;
+  padding: 7px 10px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.player-control-bar button {
+  cursor: pointer;
+}
+
+.player-control-bar button:hover {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.player-control-bar button[hidden] {
+  display: none;
+}
+
+.player-rate-control {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 8px 5px 10px;
+}
+
+.player-rate-control select {
+  min-height: 26px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-weight: 800;
+}
+
 .player-info {
   display: flex;
   justify-content: space-between;
@@ -1007,6 +1063,35 @@ code {
     border-radius: 6px;
   }
 
+  .player-control-bar {
+    order: 2;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 0;
+    padding: 8px;
+  }
+
+  .player-rate-control,
+  .player-control-bar button,
+  .player-quality-inline {
+    min-width: 0;
+    min-height: 38px;
+    justify-content: center;
+    padding: 7px 6px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .player-rate-control {
+    grid-column: span 1;
+  }
+
+  .player-quality-inline {
+    display: grid;
+    place-items: center;
+  }
+
   .player-sidebar {
     position: fixed;
     left: 0;
@@ -1202,12 +1287,12 @@ code {
   }
 
   .player-info {
-    order: 3;
+    order: 4;
     margin-top: 0;
   }
 
   .player-main > .description {
-    order: 4;
+    order: 5;
     margin-top: 0;
   }
 
@@ -1255,6 +1340,10 @@ code {
 
   .player-sidebar .compact {
     padding: 14px 16px 18px;
+  }
+
+  .player-control-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .speed-test-button {

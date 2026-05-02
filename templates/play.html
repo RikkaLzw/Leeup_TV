@@ -26,6 +26,25 @@
           <span id="qualityBadge">清晰度 未知</span>
         </div>
       </div>
+      <div class="player-control-bar" aria-label="播放器控制">
+        <label class="player-rate-control">
+          <span>倍速</span>
+          <select id="playbackRateSelect" aria-label="播放倍速">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+          </select>
+        </label>
+        <button type="button" id="pipButton">画中画</button>
+        <button type="button" id="webFullscreenButton">网页全屏</button>
+        <button type="button" id="nativeFullscreenButton">全屏</button>
+        <button type="button" id="skipIntroInlineButton">跳片头</button>
+        <button type="button" id="skipOutroInlineButton">跳片尾</button>
+        <span class="player-quality-inline" id="qualityBadgeInline">清晰度 未知</span>
+      </div>
       <div class="player-info">
         <div>
           <div class="meta-row" id="activeMeta">
