@@ -965,6 +965,7 @@ def _resolve_play_cache_key(title: str, year: str = "", kind: str = "", episode:
         return ""
     selected_episode = max(int(episode or 0), 0)
     return "|".join([
+        "v2",
         normalized,
         str(year or "").strip(),
         str(kind or "").strip().lower(),
@@ -1479,7 +1480,7 @@ def _pick_matching_candidate(
     year: str = "",
     kind: str = "",
 ) -> dict[str, Any] | None:
-    return _pick_best_resolved_result(title, year, candidates, kind) or (candidates[0] if candidates else None)
+    return _pick_best_resolved_result(title, year, candidates, kind)
 
 
 def _rank_resolved_results(
@@ -1488,21 +1489,22 @@ def _rank_resolved_results(
     results: list[dict[str, Any]],
     kind: str = "",
 ) -> list[dict[str, Any]]:
-    normalized_title = _normalize_title(title)
-    if not normalized_title:
+    canonical_title = _canonical_title_value(title)
+    if not canonical_title:
         return []
-    dominant_year = _dominant_resolve_year(normalized_title, results, kind) if not year else ""
+    dominant_year = _dominant_resolve_year(canonical_title, results, kind) if not year else ""
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, item in enumerate(results):
-        item_title = _normalize_title(item.get("title", ""))
+        item_title = _canonical_title_value(str(item.get("title") or ""))
         if not item_title:
             continue
-        exact_title = item_title == normalized_title
-        fuzzy_title = normalized_title in item_title or item_title in normalized_title
-        if not exact_title and not fuzzy_title:
+        if item_title != canonical_title:
+            continue
+        item_year = _resolve_item_year(item)
+        if year and item_year and item_year != str(year).strip():
             continue
         ranked.append((
-            _resolve_candidate_score(item, normalized_title, year, kind, dominant_year),
+            _resolve_candidate_score(item, canonical_title, year, kind, dominant_year),
             -index,
             item,
         ))
@@ -1526,14 +1528,14 @@ def _pick_best_resolved_result(
 
 def _resolve_candidate_score(
     item: dict[str, Any],
-    normalized_title: str,
+    canonical_title: str,
     year: str = "",
     kind: str = "",
     dominant_year: str = "",
 ) -> int:
-    item_title = _normalize_title(item.get("title") or "")
-    score = 100 if item_title == normalized_title else 52
-    item_year = str(item.get("year") or "").strip()
+    item_title = _canonical_title_value(str(item.get("title") or ""))
+    score = 100 if item_title == canonical_title else 0
+    item_year = _resolve_item_year(item)
     if year:
         if item_year == year:
             score += 70
@@ -1544,19 +1546,19 @@ def _resolve_candidate_score(
     elif dominant_year:
         score += 28 if item_year == dominant_year else -10 if item_year else 0
     score += _resolve_kind_score(item, kind)
-    if _looks_like_excluded_resolve(item):
+    if _looks_like_excluded_resolve(item, canonical_title):
         score -= 120
     return score
 
 
-def _dominant_resolve_year(normalized_title: str, results: list[dict[str, Any]], kind: str = "") -> str:
+def _dominant_resolve_year(canonical_title: str, results: list[dict[str, Any]], kind: str = "") -> str:
     from collections import Counter
 
     years = []
     for item in results:
-        if _normalize_title(item.get("title") or "") != normalized_title:
+        if _canonical_title_value(str(item.get("title") or "")) != canonical_title:
             continue
-        item_year = str(item.get("year") or "").strip()
+        item_year = _resolve_item_year(item)
         if not item_year:
             continue
         if kind and _resolve_kind_score(item, kind) < 0:
@@ -1629,10 +1631,54 @@ def _infer_resolve_kind(item: dict[str, Any]) -> str:
     return ""
 
 
-def _looks_like_excluded_resolve(item: dict[str, Any]) -> bool:
+def _looks_like_excluded_resolve(item: dict[str, Any], expected_title: str = "") -> bool:
     value = _normalize_title(f"{item.get('title') or ''} {item.get('type_name') or ''} {item.get('class') or ''}")
-    excluded = ("电影解说", "解说", "预告", "预告片", "花絮", "片花", "彩蛋", "幕后", "资讯")
+    excluded = [
+        "电影解说",
+        "解说",
+        "预告",
+        "预告片",
+        "花絮",
+        "片花",
+        "彩蛋",
+        "幕后",
+        "资讯",
+    ]
+    if expected_title and _canonical_title_value(str(item.get("title") or "")) != expected_title:
+        return True
     return any(word in value for word in excluded)
+
+
+def _canonical_title_value(value: str) -> str:
+    import re
+
+    normalized = _normalize_title(value)
+    normalized = re.sub(r"(19|20)\d{2}$", "", normalized)
+    suffixes = (
+        "粤语版",
+        "国语版",
+        "普通话版",
+        "粤语",
+        "国语",
+        "普通话",
+        "高清版",
+        "高清",
+        "全集",
+        "hd",
+    )
+    changed = True
+    while changed:
+        changed = False
+        for suffix in suffixes:
+            if normalized.endswith(suffix) and len(normalized) > len(suffix):
+                normalized = normalized[: -len(suffix)]
+                changed = True
+                break
+    return normalized
+
+
+def _resolve_item_year(item: dict[str, Any]) -> str:
+    return str(item.get("year") or "").strip() or _year_from_search_title(item) or _extract_year_from_text(item.get("desc") or "")
 
 
 def _normalize_title(value: str) -> str:
