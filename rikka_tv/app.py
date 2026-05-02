@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from os import PathLike
 from typing import Any
 from urllib.parse import unquote
 from urllib.parse import urlparse
@@ -18,9 +19,14 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .config import ROOT_DIR, load_config
 from .db import (
+    delete_source_resolution_cache,
+    get_play_resolution_cache,
+    get_source_resolution_cache,
     get_source_metrics,
     get_source_metrics_map,
     init_db,
+    save_play_resolution_cache,
+    save_source_resolution_cache,
     save_source_test_metrics,
 )
 from .douban import DoubanClient
@@ -61,6 +67,13 @@ class RecommendPagePayload(BaseModel):
     page_size: int = 12
 
 
+class CacheControlStaticFiles(StaticFiles):
+    def file_response(self, full_path: PathLike, stat_result: os.stat_result, scope: dict[str, Any], status_code: int = 200) -> Response:
+        response = super().file_response(full_path, stat_result, scope, status_code)
+        response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+        return response
+
+
 def create_app() -> FastAPI:
     config = load_config()
     init_db(config)
@@ -71,7 +84,7 @@ def create_app() -> FastAPI:
         secret_key=os.environ.get("RIKKA_SECRET_KEY", "rikka-tv-dev-secret"),
         same_site="lax",
     )
-    app.mount("/static", StaticFiles(directory=str(ROOT_DIR / "static")), name="static")
+    app.mount("/static", CacheControlStaticFiles(directory=str(ROOT_DIR / "static")), name="static")
 
     @app.get("/", response_class=HTMLResponse, name="index")
     async def index(request: Request):
@@ -113,14 +126,19 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/search", response_class=HTMLResponse, name="search")
-    async def search(request: Request, q: str = "", source: list[str] | None = None):
+    async def search(request: Request, q: str = "", source: list[str] | None = None, scope: str = "fast"):
         q = q.strip()
         selected_sources = source or []
+        search_scope = "custom" if selected_sources else "all" if scope == "all" else "fast"
         results: list[dict[str, Any]] = []
         failed: list[dict[str, str]] = []
+        search_meta = _search_scope_meta(load_config(), search_scope, selected_sources)
         if q:
             cfg = load_config()
-            payload = MacCMSClient(cfg).search_all(q, selected_sources=selected_sources or None)
+            client = MacCMSClient(cfg)
+            selected_for_search = selected_sources or _preferred_search_source_keys(client, cfg, search_scope)
+            search_meta = _search_scope_meta(cfg, search_scope, selected_for_search)
+            payload = client.search_all(q, selected_sources=selected_for_search or None)
             results = merge_search_results(payload["results"])
             prefer_douban_posters(results, cfg)
             failed = payload["failed"]
@@ -131,6 +149,8 @@ def create_app() -> FastAPI:
             results=results,
             failed=[],
             selected_sources=selected_sources,
+            search_scope=search_scope,
+            search_meta=search_meta,
             show_mobile_nav=True,
             active_mobile_level="search",
         )
@@ -181,8 +201,25 @@ def create_app() -> FastAPI:
             return RedirectResponse(str(request.url_for("index")), status_code=303)
         cfg = load_config()
         video_client = MacCMSClient(cfg)
-        exact, results = _resolve_play_candidate(video_client, cfg, title, year, kind, episode)
+        cache_key = _resolve_play_cache_key(title, year, kind, episode)
+        cached = get_play_resolution_cache(cache_key, _resolve_play_cache_seconds(cfg))
+        if cached and video_client.get_source(str(cached["source"])):
+            return RedirectResponse(
+                _play_url(
+                    request,
+                    str(cached["source"]),
+                    str(cached["video_id"]),
+                    episode=episode,
+                    prefer="resolved",
+                    poster=poster or str(cached.get("poster") or ""),
+                    raw_poster=raw_poster or str(cached.get("raw_poster") or ""),
+                    source_poster=source_poster or str(cached.get("source_poster") or ""),
+                ),
+                status_code=303,
+            )
+        exact, results = _resolve_play_candidate(video_client, cfg, title, year, kind, episode, cache_key)
         if exact:
+            save_play_resolution_cache(cache_key, exact)
             return RedirectResponse(
                 _play_url(
                     request,
@@ -308,14 +345,17 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/api/search", name="api_search")
-    async def api_search(q: str = ""):
+    async def api_search(q: str = "", scope: str = "fast"):
         q = q.strip()
         if not q:
             return {"results": [], "failed": []}
         cfg = load_config()
-        payload = MacCMSClient(cfg).search_all(q)
+        client = MacCMSClient(cfg)
+        search_scope = "all" if scope == "all" else "fast"
+        selected_sources = _preferred_search_source_keys(client, cfg, search_scope)
+        payload = client.search_all(q, selected_sources=selected_sources or None)
         prefer_douban_posters(payload["results"], cfg)
-        return payload
+        return {**payload, "scope": search_scope, "search_meta": _search_scope_meta(cfg, search_scope, selected_sources)}
 
     @app.get("/api/recommendations", name="api_recommendations")
     async def api_recommendations(refresh: str = "0"):
@@ -340,15 +380,7 @@ def create_app() -> FastAPI:
         }
         items = get_recommend_items(DoubanClient(cfg), cfg, fetch_config)
         page_items = items[:page_size]
-        has_more = False
-        if page_items:
-            next_probe_config = {
-                **section_config,
-                "key": f"{section_config.get('key')}_probe_{page_size}_{page + 1}",
-                "limit": page_size,
-                "start": page * page_size,
-            }
-            has_more = bool(get_recommend_items(DoubanClient(cfg), cfg, next_probe_config))
+        has_more = len(page_items) >= page_size
         return {
             "ok": True,
             "items": [_recommend_api_item(item) for item in page_items],
@@ -450,6 +482,44 @@ def _region_recommend_config(config: dict[str, Any], level1: str, region: str) -
         "kind": kind,
         "region": region,
         "sort": "U",
+    }
+
+
+def _preferred_search_source_keys(client: MacCMSClient, cfg: dict[str, Any], scope: str = "fast") -> list[str]:
+    if scope == "all":
+        return []
+    limit = _preferred_search_source_limit(cfg)
+    if limit <= 0:
+        return []
+    return [
+        str(source.get("key") or "")
+        for source in _ranked_resolve_sources(client, cfg)[:limit]
+        if source.get("key")
+    ]
+
+
+def _preferred_search_source_limit(cfg: dict[str, Any]) -> int:
+    speed_cfg = cfg.get("speed_test") or {}
+    try:
+        return max(int(speed_cfg.get("search_preferred_source_limit") or 8), 1)
+    except (TypeError, ValueError):
+        return 8
+
+
+def _search_scope_meta(cfg: dict[str, Any], scope: str, selected_sources: list[str] | None = None) -> dict[str, Any]:
+    total_sources = len(MacCMSClient(cfg).available_sources())
+    selected_count = len([source for source in (selected_sources or []) if source])
+    if scope == "all" or not selected_count:
+        searched_count = total_sources
+        has_more = False
+    else:
+        searched_count = min(selected_count, total_sources)
+        has_more = total_sources > searched_count
+    return {
+        "scope": scope,
+        "searched_count": searched_count,
+        "total_count": total_sources,
+        "has_more": has_more,
     }
 
 
@@ -604,10 +674,20 @@ def _resolve_play_candidate(
     year: str = "",
     kind: str = "",
     episode: int = 0,
+    cache_key: str = "",
 ) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
     results: list[dict[str, Any]] = []
     max_page = _resolve_play_search_max_page(cfg)
-    for source in _ranked_resolve_sources(video_client):
+    negative_sources = get_source_resolution_cache(cache_key, _resolve_negative_cache_seconds(cfg))
+    probe_limit = _resolve_source_probe_limit(cfg)
+    tried_sources = 0
+    for source in _ranked_resolve_sources(video_client, cfg):
+        source_key = str(source.get("key") or "")
+        if source_key in negative_sources:
+            continue
+        if probe_limit and tried_sources >= probe_limit:
+            break
+        tried_sources += 1
         try:
             source_results = video_client.search_source(source, title, max_page)
         except Exception as exc:
@@ -618,18 +698,28 @@ def _resolve_play_candidate(
                 title,
                 exc,
             )
+            _save_resolution_status(cache_key, source_key, "error")
             continue
 
         if source_results:
             results.extend(source_results)
-        for candidate in _rank_resolved_results(title, year, source_results, kind):
+        ranked_results = _rank_resolved_results(title, year, source_results, kind)
+        if not ranked_results:
+            _save_resolution_status(cache_key, source_key, "no_match")
+            continue
+        source_had_candidate = False
+        for candidate in ranked_results:
+            source_had_candidate = True
             playable = _playable_resolved_candidate(video_client, candidate, title, year, kind, episode)
             if playable:
+                delete_source_resolution_cache(cache_key, source_key)
                 return playable, results
+        if source_had_candidate:
+            _save_resolution_status(cache_key, source_key, "no_playable")
     return None, results
 
 
-def _ranked_resolve_sources(video_client: MacCMSClient) -> list[dict[str, Any]]:
+def _ranked_resolve_sources(video_client: MacCMSClient, cfg: dict[str, Any]) -> list[dict[str, Any]]:
     sources = video_client.available_sources()
     metrics = get_source_metrics_map()
 
@@ -646,12 +736,41 @@ def _ranked_resolve_sources(video_client: MacCMSClient) -> list[dict[str, Any]]:
             bucket = 1
         return (
             bucket,
-            -float(metric.get("source_score") or 0),
+            -_resolve_source_rank_score(metric, cfg),
             -float(metric.get("avg_speed_kbps") or 0),
             index,
         )
 
     return [source for _index, source in sorted(enumerate(sources), key=sort_key)]
+
+
+def _resolve_source_rank_score(metric: dict[str, Any], cfg: dict[str, Any]) -> float:
+    if not metric:
+        return 0
+    speed_cfg = cfg.get("speed_test") or {}
+    speed_weight = _config_float(speed_cfg, "resolve_rank_speed_weight", 0.65)
+    success_weight = _config_float(speed_cfg, "resolve_rank_success_weight", 0.2)
+    quality_weight = _config_float(speed_cfg, "resolve_rank_quality_weight", 0.1)
+    latency_weight = _config_float(speed_cfg, "resolve_rank_latency_weight", 0.05)
+    total = max(speed_weight + success_weight + quality_weight + latency_weight, 0.001)
+    speed_weight /= total
+    success_weight /= total
+    quality_weight /= total
+    latency_weight /= total
+
+    cap = max(_config_float(speed_cfg, "browser_speed_cap_kbps", 12288), 1024)
+    speed_score = min(float(metric.get("avg_speed_kbps") or 0) / cap * 100, 100)
+    success_score = min(max(float(metric.get("success_rate") or 0), 0), 1) * 100
+    quality_score = min(max(float(metric.get("avg_score") or 0), 0), 100)
+    latency_ms = float(metric.get("avg_latency_ms") or 0)
+    latency_score = 50 if latency_ms <= 0 else max(0, 100 - min(latency_ms, 5000) / 5000 * 100)
+    return round(
+        speed_score * speed_weight
+        + success_score * success_weight
+        + quality_score * quality_weight
+        + latency_score * latency_weight,
+        3,
+    )
 
 
 def _resolve_play_search_max_page(cfg: dict[str, Any]) -> int:
@@ -661,6 +780,59 @@ def _resolve_play_search_max_page(cfg: dict[str, Any]) -> int:
         return max(int(value or 1), 1)
     except (TypeError, ValueError):
         return 1
+
+
+def _resolve_play_cache_seconds(cfg: dict[str, Any]) -> int:
+    speed_cfg = cfg.get("speed_test") or {}
+    try:
+        return max(int(speed_cfg.get("resolve_cache_seconds") or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _resolve_negative_cache_seconds(cfg: dict[str, Any]) -> int:
+    speed_cfg = cfg.get("speed_test") or {}
+    try:
+        return max(int(speed_cfg.get("resolve_negative_cache_seconds") or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _resolve_source_probe_limit(cfg: dict[str, Any]) -> int:
+    speed_cfg = cfg.get("speed_test") or {}
+    try:
+        return max(int(speed_cfg.get("resolve_source_probe_limit") or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _config_float(config: dict[str, Any], key: str, default: float) -> float:
+    try:
+        return float(config.get(key) if config.get(key) is not None else default)
+    except (TypeError, ValueError):
+        return default
+
+
+def _save_resolution_status(cache_key: str, source: str, status: str) -> None:
+    if not cache_key or not source:
+        return
+    try:
+        save_source_resolution_cache(cache_key, source, status)
+    except Exception:
+        return
+
+
+def _resolve_play_cache_key(title: str, year: str = "", kind: str = "", episode: int = 0) -> str:
+    normalized = _normalize_title(title)
+    if not normalized:
+        return ""
+    selected_episode = max(int(episode or 0), 0)
+    return "|".join([
+        normalized,
+        str(year or "").strip(),
+        str(kind or "").strip().lower(),
+        str(selected_episode),
+    ])
 
 
 def _playable_resolved_candidate(

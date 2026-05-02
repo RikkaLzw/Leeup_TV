@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from contextlib import contextmanager
 from typing import Any, Iterator
@@ -32,6 +33,38 @@ def init_db(config: dict[str, Any]) -> None:
               last_error TEXT,
               last_test_at INTEGER,
               updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS play_resolution_cache (
+              cache_key TEXT PRIMARY KEY,
+              source TEXT NOT NULL,
+              video_id TEXT NOT NULL,
+              poster TEXT,
+              raw_poster TEXT,
+              source_poster TEXT,
+              updated_at INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS detail_cache (
+              source TEXT NOT NULL,
+              video_id TEXT NOT NULL,
+              payload TEXT NOT NULL,
+              updated_at INTEGER NOT NULL,
+              PRIMARY KEY (source, video_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS search_cache (
+              cache_key TEXT PRIMARY KEY,
+              payload TEXT NOT NULL,
+              updated_at INTEGER NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS source_resolution_cache (
+              cache_key TEXT NOT NULL,
+              source TEXT NOT NULL,
+              status TEXT NOT NULL,
+              updated_at INTEGER NOT NULL,
+              PRIMARY KEY (cache_key, source)
             );
             """
         )
@@ -141,6 +174,175 @@ def get_source_metrics(limit: int = 50) -> list[dict[str, Any]]:
     return sorted((_row_to_source_metric(row) for row in rows), key=lambda item: item["source_score"], reverse=True)
 
 
+def get_play_resolution_cache(cache_key: str, max_age_seconds: int) -> dict[str, Any] | None:
+    if not cache_key or max_age_seconds <= 0:
+        return None
+    cutoff = int(time.time()) - int(max_age_seconds)
+    with connect() as db:
+        row = db.execute(
+            """
+            SELECT * FROM play_resolution_cache
+            WHERE cache_key = ? AND updated_at >= ?
+            """,
+            (cache_key, cutoff),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def save_play_resolution_cache(cache_key: str, item: dict[str, Any]) -> None:
+    source = str(item.get("source") or "").strip()
+    video_id = str(item.get("id") or "").strip()
+    if not cache_key or not source or not video_id:
+        return
+    now = int(time.time())
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO play_resolution_cache
+              (cache_key, source, video_id, poster, raw_poster, source_poster, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(cache_key) DO UPDATE SET
+              source = excluded.source,
+              video_id = excluded.video_id,
+              poster = excluded.poster,
+              raw_poster = excluded.raw_poster,
+              source_poster = excluded.source_poster,
+              updated_at = excluded.updated_at
+            """,
+            (
+                cache_key,
+                source,
+                video_id,
+                str(item.get("poster") or ""),
+                str(item.get("raw_poster") or ""),
+                str(item.get("source_poster") or ""),
+                now,
+            ),
+        )
+
+
+def get_detail_cache(source: str, video_id: str, max_age_seconds: int) -> dict[str, Any] | None:
+    if not source or not video_id or max_age_seconds <= 0:
+        return None
+    cutoff = int(time.time()) - int(max_age_seconds)
+    with connect() as db:
+        row = db.execute(
+            """
+            SELECT payload FROM detail_cache
+            WHERE source = ? AND video_id = ? AND updated_at >= ?
+            """,
+            (source, video_id, cutoff),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        payload = json.loads(str(row["payload"] or "{}"))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def save_detail_cache(source: str, video_id: str, payload: dict[str, Any]) -> None:
+    if not source or not video_id or not payload:
+        return
+    now = int(time.time())
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO detail_cache (source, video_id, payload, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(source, video_id) DO UPDATE SET
+              payload = excluded.payload,
+              updated_at = excluded.updated_at
+            """,
+            (source, video_id, json.dumps(payload, ensure_ascii=False), now),
+        )
+
+
+def get_search_cache(cache_key: str, max_age_seconds: int) -> dict[str, Any] | None:
+    if not cache_key or max_age_seconds <= 0:
+        return None
+    cutoff = int(time.time()) - int(max_age_seconds)
+    with connect() as db:
+        row = db.execute(
+            """
+            SELECT payload FROM search_cache
+            WHERE cache_key = ? AND updated_at >= ?
+            """,
+            (cache_key, cutoff),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        payload = json.loads(str(row["payload"] or "{}"))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def save_search_cache(cache_key: str, payload: dict[str, Any]) -> None:
+    if not cache_key or not payload:
+        return
+    now = int(time.time())
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO search_cache (cache_key, payload, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(cache_key) DO UPDATE SET
+              payload = excluded.payload,
+              updated_at = excluded.updated_at
+            """,
+            (cache_key, json.dumps(payload, ensure_ascii=False), now),
+        )
+
+
+def get_source_resolution_cache(cache_key: str, max_age_seconds: int) -> dict[str, str]:
+    if not cache_key or max_age_seconds <= 0:
+        return {}
+    cutoff = int(time.time()) - int(max_age_seconds)
+    with connect() as db:
+        rows = db.execute(
+            """
+            SELECT source, status FROM source_resolution_cache
+            WHERE cache_key = ? AND updated_at >= ?
+            """,
+            (cache_key, cutoff),
+        ).fetchall()
+    return {
+        str(row["source"]): str(row["status"] or "")
+        for row in rows
+        if row["source"]
+    }
+
+
+def save_source_resolution_cache(cache_key: str, source: str, status: str) -> None:
+    if not cache_key or not source or not status:
+        return
+    now = int(time.time())
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO source_resolution_cache (cache_key, source, status, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(cache_key, source) DO UPDATE SET
+              status = excluded.status,
+              updated_at = excluded.updated_at
+            """,
+            (cache_key, source, status, now),
+        )
+
+
+def delete_source_resolution_cache(cache_key: str, source: str) -> None:
+    if not cache_key or not source:
+        return
+    with connect() as db:
+        db.execute(
+            "DELETE FROM source_resolution_cache WHERE cache_key = ? AND source = ?",
+            (cache_key, source),
+        )
+
+
 def _row_to_source_metric(row: sqlite3.Row) -> dict[str, Any]:
     tests_total = int(row["tests_total"] or 0)
     tests_ok = int(row["tests_ok"] or 0)
@@ -164,8 +366,13 @@ def _row_to_source_metric(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def _source_score(avg_score: float, success_rate: float, avg_speed_kbps: float) -> float:
-    speed_bonus = min(20, _capped_metric_speed(avg_speed_kbps) / 1024 * 2)
-    return round(max(0, min(100, avg_score * 0.7 + success_rate * 10 + speed_bonus)), 1)
+    try:
+        cap = float((load_config().get("speed_test") or {}).get("browser_speed_cap_kbps") or 12288)
+    except Exception:
+        cap = 12288
+    cap = max(cap, 1024)
+    speed_score = min(_capped_metric_speed(avg_speed_kbps) / cap * 100, 100)
+    return round(max(0, min(100, speed_score * 0.6 + avg_score * 0.25 + success_rate * 15)), 1)
 
 
 def _capped_metric_speed(speed_kbps: float) -> float:
@@ -181,4 +388,3 @@ def _rolling_average(previous_average: float, previous_count: int, value: float)
     if previous_count <= 0:
         return value
     return ((previous_average * previous_count) + value) / (previous_count + 1)
-

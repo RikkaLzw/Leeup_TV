@@ -11,9 +11,17 @@
           <p class="muted">来自豆瓣推荐：{{ resolved_from.title }}{% if resolved_from.year %} · {{ resolved_from.year }}{% endif %}</p>
         {% endif %}
         {% if q %}
-          <p class="muted">关键词：{{ q }}，共 {{ results|length }} 条结果</p>
+          <p class="muted">
+            关键词：{{ q }}，共 {{ results|length }} 条结果
+            {% if search_meta and search_meta.total_count %}
+              · 已搜索 {{ search_meta.searched_count }}/{{ search_meta.total_count }} 个源
+            {% endif %}
+          </p>
         {% endif %}
       </div>
+      {% if q and search_meta and search_meta.has_more %}
+        <a class="secondary-button" href="{{ url_for('search') }}?q={{ q|urlencode }}&scope=all">搜索更多源</a>
+      {% endif %}
     </div>
 
     {% if results %}

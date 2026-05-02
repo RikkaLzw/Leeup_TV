@@ -9,6 +9,8 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import requests
 
+from .db import get_detail_cache, get_search_cache, save_detail_cache, save_search_cache
+
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -55,11 +57,16 @@ class MacCMSClient:
             sources = [source for source in sources if source["key"] in selected]
         if not sources:
             return {"results": [], "failed": []}
+        search_max_page = int(max_page or self.config.get("search_max_page") or 1)
+        cache_key = self._search_cache_key(query, sources, search_max_page)
+        cached = self._get_search_cache(cache_key)
+        if cached:
+            return cached
 
         results: list[dict[str, Any]] = []
         failed: list[dict[str, str]] = []
         with ThreadPoolExecutor(max_workers=min(8, len(sources))) as pool:
-            futures = {pool.submit(self.search_source, source, query, max_page): source for source in sources}
+            futures = {pool.submit(self.search_source, source, query, search_max_page): source for source in sources}
             for future in as_completed(futures):
                 source = futures[future]
                 try:
@@ -75,7 +82,9 @@ class MacCMSClient:
                     failed.append({"key": source["key"], "name": source.get("name", source["key"]), "error": str(exc)})
 
         results.sort(key=lambda item: (_title_distance(query, item.get("title", "")), item.get("source_name", "")))
-        return {"results": results, "failed": failed}
+        payload = {"results": results, "failed": failed}
+        self._save_search_cache(cache_key, payload)
+        return payload
 
     def search_source(self, source: dict[str, Any], query: str, max_page_override: int | None = None) -> list[dict[str, Any]]:
         max_page = int(max_page_override or self.config.get("search_max_page") or 1)
@@ -96,14 +105,21 @@ class MacCMSClient:
         source = self.get_source(source_key)
         if not source:
             raise ValueError("无效的视频源")
+        cached = self._get_detail_cache(source_key, str(video_id))
+        if cached:
+            return cached
         url = f"{source['api']}?ac=videolist&ids={quote(str(video_id))}"
         data = self._get_json(url)
         items = data.get("list") or []
         if not items:
             if source.get("detail"):
-                return self._get_html_detail(source, video_id)
+                detail = self._get_html_detail(source, video_id)
+                self._save_detail_cache(source_key, str(video_id), detail)
+                return detail
             raise ValueError("详情为空")
-        return self._map_item(items[0], source)
+        detail = self._map_item(items[0], source)
+        self._save_detail_cache(source_key, str(video_id), detail)
+        return detail
 
     def find_play_candidates(
         self,
@@ -204,6 +220,45 @@ class MacCMSClient:
         response = requests.get(url, headers=HEADERS, timeout=(5, 12))
         response.raise_for_status()
         return response.json()
+
+    def _search_cache_key(self, query: str, sources: list[dict[str, Any]], max_page: int) -> str:
+        source_keys = ",".join(sorted(str(source.get("key") or "") for source in sources))
+        return f"{_normalize_title(query)}|{max_page}|{source_keys}"
+
+    def _get_search_cache(self, cache_key: str) -> dict[str, Any] | None:
+        try:
+            ttl = int(self.config.get("search_cache_seconds") or 0)
+            cached = get_search_cache(cache_key, ttl)
+        except Exception:
+            return None
+        if not cached:
+            return None
+        results = cached.get("results")
+        failed = cached.get("failed")
+        if not isinstance(results, list) or not isinstance(failed, list):
+            return None
+        return cached
+
+    def _save_search_cache(self, cache_key: str, payload: dict[str, Any]) -> None:
+        try:
+            if int(self.config.get("search_cache_seconds") or 0) > 0:
+                save_search_cache(cache_key, payload)
+        except Exception:
+            return
+
+    def _get_detail_cache(self, source_key: str, video_id: str) -> dict[str, Any] | None:
+        try:
+            ttl = int(self.config.get("detail_cache_seconds") or self.config.get("cache_time") or 0)
+            return get_detail_cache(source_key, video_id, ttl)
+        except Exception:
+            return None
+
+    def _save_detail_cache(self, source_key: str, video_id: str, payload: dict[str, Any]) -> None:
+        try:
+            if int(self.config.get("detail_cache_seconds") or self.config.get("cache_time") or 0) > 0:
+                save_detail_cache(source_key, video_id, payload)
+        except Exception:
+            return
 
     def _map_item(self, item: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
         episodes, titles = parse_episodes(item.get("vod_play_url") or "", item.get("vod_content") or "")

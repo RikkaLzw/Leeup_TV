@@ -287,12 +287,12 @@ def _config_float(config: dict[str, Any], key: str, default: float) -> float:
 
 
 def _score_weights(config: dict[str, Any]) -> tuple[float, float, float]:
-    speed = max(_config_float(config, "score_speed_weight", 0.7), 0)
-    quality = max(_config_float(config, "score_quality_weight", 0.2), 0)
-    latency = max(_config_float(config, "score_latency_weight", 0.1), 0)
+    speed = max(_config_float(config, "score_speed_weight", 0.85), 0)
+    quality = max(_config_float(config, "score_quality_weight", 0.1), 0)
+    latency = max(_config_float(config, "score_latency_weight", 0.05), 0)
     total = speed + quality + latency
     if total <= 0:
-        return 0.7, 0.2, 0.1
+        return 0.85, 0.1, 0.05
     return speed / total, quality / total, latency / total
 
 
