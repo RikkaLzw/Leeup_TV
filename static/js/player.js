@@ -9,6 +9,7 @@
   let loadTimer = null;
   let longPressTimer = null;
   let longPressActive = false;
+  let longPressPointerId = null;
   let savedPlaybackRate = 1;
   let gestureStart = null;
   let activePlaybackKey = "";
@@ -54,7 +55,7 @@
         fullscreenWeb: true,
         playbackRate: true,
         gesture: true,
-        fastForward: true,
+        fastForward: false,
         miniProgressBar: true,
         mutex: true,
         autoSize: false,
@@ -296,6 +297,8 @@
   }
 
   function applyCandidate(candidate, autoPlay) {
+    const handoffTime = currentPlaybackTime();
+    if (handoffTime > 1) saveProgress();
     detail = candidate;
     currentSource = candidate.source;
     currentId = candidate.id;
@@ -307,7 +310,7 @@
     renderEpisodes();
     renderCandidates(Array.from(candidateList.__candidates || []));
     ensureCandidateVisible(candidate);
-    playUrl(detail.episodes[currentEpisode], resumeTimeFor(currentSource, currentId, currentEpisode));
+    playUrl(detail.episodes[currentEpisode], resumeTimeFor(currentSource, currentId, currentEpisode, handoffTime));
     if (autoPlay) {
       playMedia();
     }
@@ -461,30 +464,40 @@
 
   function setupLongPressFastForward() {
     if (!playerContainer) return;
-    playerContainer.addEventListener("pointerdown", startLongPress, { passive: true });
+    playerContainer.addEventListener("pointerdown", startLongPress);
     playerContainer.addEventListener("pointermove", moveLongPress, { passive: true });
     playerContainer.addEventListener("pointerup", stopLongPress, { passive: true });
     playerContainer.addEventListener("pointercancel", stopLongPress, { passive: true });
     playerContainer.addEventListener("pointerleave", stopLongPress, { passive: true });
+    document.addEventListener("pointerup", stopLongPress, { passive: true });
+    document.addEventListener("pointercancel", stopLongPress, { passive: true });
+    window.addEventListener("blur", forceStopLongPress);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) forceStopLongPress();
+    });
   }
 
   function startLongPress(event) {
-    if (!isMobileViewport() && event.pointerType === "mouse") return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.pointerType === "mouse") return;
+    if (!isMobileViewport() && event.pointerType !== "touch" && event.pointerType !== "pen") return;
     if (isPlayerControlTarget(event.target)) return;
-    gestureStart = { x: event.clientX, y: event.clientY };
+    if (longPressActive) stopLongPress(event);
+    longPressPointerId = event.pointerId;
+    gestureStart = { x: event.clientX, y: event.clientY, pointerId: event.pointerId };
     clearLongPressTimer();
     longPressTimer = window.setTimeout(() => activateLongPress(), 450);
   }
 
   function moveLongPress(event) {
+    if (longPressPointerId !== null && event.pointerId !== longPressPointerId) return;
     if (!gestureStart || longPressActive) return;
     const distance = Math.hypot(event.clientX - gestureStart.x, event.clientY - gestureStart.y);
-    if (distance > 14) clearLongPressTimer();
+    if (distance > 14) cancelPendingLongPress();
   }
 
   function activateLongPress() {
     if (!player) return;
+    clearLongPressTimer();
     longPressActive = true;
     savedPlaybackRate = Number(player.playbackRate || 1);
     player.playbackRate = 3;
@@ -492,13 +505,27 @@
     if (player.paused) playMedia();
   }
 
-  function stopLongPress() {
+  function stopLongPress(event) {
+    if (event?.pointerId !== undefined && longPressPointerId !== null && event.pointerId !== longPressPointerId) {
+      return;
+    }
     clearLongPressTimer();
     gestureStart = null;
+    longPressPointerId = null;
     if (!longPressActive) return;
     longPressActive = false;
     player.playbackRate = savedPlaybackRate || 1;
     hideGestureHint();
+  }
+
+  function forceStopLongPress() {
+    stopLongPress();
+  }
+
+  function cancelPendingLongPress() {
+    clearLongPressTimer();
+    gestureStart = null;
+    longPressPointerId = null;
   }
 
   function clearLongPressTimer() {
@@ -524,6 +551,27 @@
     return Boolean(target.closest(
       ".art-bottom, .art-controls, .art-progress, .art-settings, .art-contextmenus"
     ));
+  }
+
+  function setupDesktopClickPlayback() {
+    if (!playerContainer) return;
+    playerContainer.addEventListener("click", (event) => {
+      if (event.detail > 1 || isMobileViewport()) return;
+      if (isPlayerControlTarget(event.target)) return;
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest(".art-video")) return;
+      if (!event.target.closest(".art-video-player, .art-mask, .art-state, .art-poster")) return;
+      togglePlayback();
+    });
+  }
+
+  function togglePlayback() {
+    if (!player) return;
+    if (player.paused) {
+      playMedia();
+    } else {
+      player.pause();
+    }
   }
 
   async function runPreference() {
@@ -846,7 +894,13 @@
     }
   }
 
-  function resumeTimeFor(source, id, episode) {
+  function currentPlaybackTime() {
+    const value = Number(player?.currentTime || 0);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function resumeTimeFor(source, id, episode, handoffTime = 0) {
+    if (handoffTime > 1) return handoffTime;
     if (!resumeRecord) return 0;
     const sameSource = `${resumeRecord.source || ""}+${resumeRecord.id || ""}` === `${source || ""}+${id || ""}`;
     const sameTitle = normalizeTitle(resumeRecord.search_title || resumeRecord.title) === normalizeTitle((cfg.originalDetail || cfg.detail || {}).title || detail.title);
@@ -990,6 +1044,7 @@
     tab.addEventListener("click", () => setMobilePanel(tab.dataset.mobilePanel || "episodes"));
   });
   setupLongPressFastForward();
+  setupDesktopClickPlayback();
   player?.addEventListener("pause", saveProgress);
   player?.addEventListener("loadstart", () => setPlayerOverlay("正在加载视频"));
   player?.addEventListener("loadedmetadata", () => {

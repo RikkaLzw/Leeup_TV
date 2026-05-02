@@ -244,7 +244,8 @@ def create_app() -> FastAPI:
         video_client = MacCMSClient(cfg)
         cache_key = _resolve_play_cache_key(title, year, kind, episode)
         cached = get_play_resolution_cache(cache_key, _resolve_play_cache_seconds(cfg))
-        if cached and video_client.get_source(str(cached["source"])):
+        cached_detail = _cached_resolved_play_candidate(video_client, cached, title, year, kind, episode) if cached else None
+        if cached_detail:
             return RedirectResponse(
                 _play_url(
                     request,
@@ -255,6 +256,9 @@ def create_app() -> FastAPI:
                     poster=poster or str(cached.get("poster") or ""),
                     raw_poster=raw_poster or str(cached.get("raw_poster") or ""),
                     source_poster=source_poster or str(cached.get("source_poster") or ""),
+                    resolve_title=title,
+                    resolve_year=year,
+                    resolve_kind=kind,
                 ),
                 status_code=303,
             )
@@ -271,10 +275,13 @@ def create_app() -> FastAPI:
                     poster=poster or str(exact.get("poster") or ""),
                     raw_poster=raw_poster or str(exact.get("raw_poster") or ""),
                     source_poster=source_poster or str(exact.get("source_poster") or ""),
+                    resolve_title=title,
+                    resolve_year=year,
+                    resolve_kind=kind,
                 ),
                 status_code=303,
             )
-        results = merge_search_results(results)
+        results = merge_search_results(_resolve_fallback_results(title, year, results, kind))
         prefer_douban_posters(results, cfg)
         return _template(
             request,
@@ -340,6 +347,9 @@ def create_app() -> FastAPI:
         poster: str = "",
         raw_poster: str = "",
         source_poster: str = "",
+        resolve_title: str = "",
+        resolve_year: str = "",
+        resolve_kind: str = "",
     ):
         cfg = load_config()
         video_client = MacCMSClient(cfg)
@@ -351,6 +361,7 @@ def create_app() -> FastAPI:
             _flash(request, f"获取播放信息失败：{exc}", "error")
             return RedirectResponse(str(request.url_for("index")), status_code=303)
 
+        original_item = _resolved_original_item(detail_data, resolve_title, resolve_year, resolve_kind)
         episode = max(int(episode or 0), 0)
         if detail_data.get("episodes"):
             episode = min(episode, len(detail_data["episodes"]) - 1)
@@ -369,7 +380,7 @@ def create_app() -> FastAPI:
             request,
             "play.html",
             item=recommended_detail,
-            original_item=detail_data,
+            original_item=original_item,
             episode=episode,
             record=None,
             prefer_enabled=prefer_enabled,
@@ -746,6 +757,9 @@ def _play_url(
     poster: str = "",
     raw_poster: str = "",
     source_poster: str = "",
+    resolve_title: str = "",
+    resolve_year: str = "",
+    resolve_kind: str = "",
 ) -> str:
     url = str(request.url_for("play", source=source, video_id=video_id))
     params = {
@@ -756,10 +770,34 @@ def _play_url(
             "poster": poster,
             "raw_poster": raw_poster,
             "source_poster": source_poster,
+            "resolve_title": resolve_title,
+            "resolve_year": resolve_year,
+            "resolve_kind": resolve_kind,
         }.items()
         if value
     }
     return f"{url}?{urlencode(params)}" if params else url
+
+
+def _resolved_original_item(
+    detail_data: dict[str, Any],
+    resolve_title: str = "",
+    resolve_year: str = "",
+    resolve_kind: str = "",
+) -> dict[str, Any]:
+    original = dict(detail_data)
+    title = str(resolve_title or "").strip()
+    year = str(resolve_year or "").strip()
+    kind = str(resolve_kind or "").strip().lower()
+    if title:
+        original["title"] = title
+        original["search_title"] = title
+    if year:
+        original["year"] = year
+    if kind:
+        original["kind"] = kind
+        original["resolve_kind"] = kind
+    return original
 
 
 def _douban_detail_item(
@@ -965,7 +1003,7 @@ def _resolve_play_cache_key(title: str, year: str = "", kind: str = "", episode:
         return ""
     selected_episode = max(int(episode or 0), 0)
     return "|".join([
-        "v2",
+        "v3",
         normalized,
         str(year or "").strip(),
         str(kind or "").strip().lower(),
@@ -981,7 +1019,7 @@ def _playable_resolved_candidate(
     kind: str = "",
     episode: int = 0,
 ) -> dict[str, Any] | None:
-    if _has_playable_episode(candidate, episode):
+    if _has_playable_episode(candidate, episode) and not _candidate_needs_detail_validation(candidate, year):
         return candidate
     try:
         detail = video_client.get_detail(str(candidate.get("source") or ""), str(candidate.get("id") or ""))
@@ -990,6 +1028,40 @@ def _playable_resolved_candidate(
             "MacCMS resolve-play detail failed: source=%s id=%s title=%r error=%s",
             candidate.get("source"),
             candidate.get("id"),
+            title,
+            exc,
+        )
+        return None
+    if not _pick_best_resolved_result(title, year, [detail], kind):
+        return None
+    return detail if _has_playable_episode(detail, episode) else None
+
+
+def _candidate_needs_detail_validation(candidate: dict[str, Any], year: str = "") -> bool:
+    return bool(str(year or "").strip() and not _resolve_item_year(candidate))
+
+
+def _cached_resolved_play_candidate(
+    video_client: MacCMSClient,
+    cached: dict[str, Any] | None,
+    title: str,
+    year: str = "",
+    kind: str = "",
+    episode: int = 0,
+) -> dict[str, Any] | None:
+    if not cached:
+        return None
+    source = str(cached.get("source") or "")
+    video_id = str(cached.get("video_id") or "")
+    if not source or not video_id or not video_client.get_source(source):
+        return None
+    try:
+        detail = video_client.get_detail(source, video_id)
+    except Exception as exc:
+        LOGGER.warning(
+            "MacCMS cached resolve-play detail failed: source=%s id=%s title=%r error=%s",
+            source,
+            video_id,
             title,
             exc,
         )
@@ -1524,6 +1596,23 @@ def _pick_best_resolved_result(
 ) -> dict[str, Any] | None:
     ranked = _rank_resolved_results(title, year, results, kind)
     return ranked[0] if ranked else None
+
+
+def _resolve_fallback_results(
+    title: str,
+    year: str,
+    results: list[dict[str, Any]],
+    kind: str = "",
+) -> list[dict[str, Any]]:
+    ranked = _rank_resolved_results(title, year, results, kind)
+    if ranked:
+        return ranked
+    if year:
+        return []
+    return [
+        item for item in results
+        if _canonical_title_value(str(item.get("title") or "")) == _canonical_title_value(title)
+    ]
 
 
 def _resolve_candidate_score(

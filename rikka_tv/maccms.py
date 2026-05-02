@@ -147,7 +147,7 @@ class MacCMSClient:
         if current_source and current_id:
             try:
                 current = self.get_detail(current_source, current_id)
-                if not title or _title_matches(title, current.get("title", "")):
+                if not title or _candidate_matches_target(current, title, target_year, target_kind, episode_index):
                     candidates[f"{current['source']}+{current['id']}"] = current
                 title = title or current["title"]
                 target_year = target_year or str(current.get("year") or "").strip()
@@ -163,7 +163,10 @@ class MacCMSClient:
                 if _is_excluded_result(item):
                     continue
                 normalized_title = _normalize_title(item.get("title", ""))
-                if normalized_query == normalized_title or normalized_query in normalized_title or normalized_title in normalized_query:
+                if target_year:
+                    if _candidate_matches_target(item, title, target_year, target_kind, episode_index):
+                        shortlist.append(item)
+                elif normalized_query == normalized_title or normalized_query in normalized_title or normalized_title in normalized_query:
                     shortlist.append(item)
             shortlist.sort(
                 key=lambda item: _candidate_target_score(item, target_year, target_kind, episode_index),
@@ -180,17 +183,21 @@ class MacCMSClient:
                     key = f"{item['source']}+{item['id']}"
                     if _is_excluded_result(item):
                         continue
-                    if not _title_matches(title, item.get("title", "")):
+                    if not _candidate_matches_target(item, title, target_year, target_kind, episode_index):
                         continue
                     if key in candidates and candidates[key].get("episodes"):
                         continue
-                    if item.get("episodes") and len(item["episodes"]) > episode_index:
+                    if target_year and not _candidate_year_value(item):
+                        futures.append(pool.submit(self.get_detail, item["source"], item["id"]))
+                    elif item.get("episodes") and len(item["episodes"]) > episode_index:
                         candidates[key] = item
                     else:
                         futures.append(pool.submit(self.get_detail, item["source"], item["id"]))
                 for future in as_completed(futures):
                     try:
                         detail = future.result()
+                        if not _candidate_matches_target(detail, title, target_year, target_kind, episode_index):
+                            continue
                         candidates[f"{detail['source']}+{detail['id']}"] = detail
                     except Exception:
                         continue
@@ -207,7 +214,7 @@ class MacCMSClient:
         return [
             item for item in deduped
             if _is_current_candidate(item, current_source, current_id)
-            or _candidate_is_compatible(item, target_year, target_kind, episode_index)
+            or _candidate_matches_target(item, title, target_year, target_kind, episode_index)
         ]
 
     def _search_url(self, api: str, query: str, page: int) -> str:
@@ -459,6 +466,34 @@ def _candidate_is_compatible(
     return True
 
 
+def _candidate_matches_target(
+    item: dict[str, Any],
+    title: str,
+    expected_year: str = "",
+    expected_kind: str = "",
+    episode_index: int = 0,
+) -> bool:
+    if not _title_matches(title, item.get("title", ""), strict=bool(expected_year)):
+        return False
+    if not _candidate_year_matches(item, expected_year):
+        return False
+    return _candidate_is_compatible(item, expected_year, expected_kind, episode_index)
+
+
+def _candidate_year_matches(item: dict[str, Any], expected_year: str = "") -> bool:
+    expected_year = str(expected_year or "").strip()
+    if not expected_year:
+        return True
+    item_year = _candidate_year_value(item)
+    if not item_year:
+        return True
+    return item_year == expected_year
+
+
+def _candidate_year_value(item: dict[str, Any]) -> str:
+    return str(item.get("year") or "").strip() or _extract_year(str(item.get("title") or ""))
+
+
 def _is_current_candidate(item: dict[str, Any], current_source: str | None, current_id: str | None) -> bool:
     return str(item.get("source") or "") == str(current_source or "") and str(item.get("id") or "") == str(current_id or "")
 
@@ -565,11 +600,13 @@ def _title_distance(query: str, title: str) -> int:
     return 2
 
 
-def _title_matches(query: str, title: str) -> bool:
+def _title_matches(query: str, title: str, strict: bool = False) -> bool:
     q = _normalize_title(query)
     t = _normalize_title(title)
     if not q or not t:
         return False
+    if strict:
+        return _canonical_title_value(q) == _canonical_title_value(t)
     if q == t:
         return True
     if q in t and _has_excluded_suffix(t.removeprefix(q)):
@@ -577,6 +614,31 @@ def _title_matches(query: str, title: str) -> bool:
     if t in q and _has_excluded_suffix(q.removeprefix(t)):
         return False
     return q == t or q in t or t in q
+
+
+def _canonical_title_value(value: str) -> str:
+    normalized = re.sub(r"(19|20)\d{2}$", "", _normalize_title(value))
+    suffixes = (
+        "粤语版",
+        "国语版",
+        "普通话版",
+        "粤语",
+        "国语",
+        "普通话",
+        "高清版",
+        "高清",
+        "全集",
+        "hd",
+    )
+    changed = True
+    while changed:
+        changed = False
+        for suffix in suffixes:
+            if normalized.endswith(suffix) and len(normalized) > len(suffix):
+                normalized = normalized[: -len(suffix)]
+                changed = True
+                break
+    return normalized
 
 
 def _has_excluded_suffix(value: str) -> bool:
