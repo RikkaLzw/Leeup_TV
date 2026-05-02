@@ -66,6 +66,12 @@ def init_db(config: dict[str, Any]) -> None:
               updated_at INTEGER NOT NULL,
               PRIMARY KEY (cache_key, source)
             );
+
+            CREATE TABLE IF NOT EXISTS recommend_cache (
+              cache_key TEXT PRIMARY KEY,
+              payload TEXT NOT NULL,
+              updated_at INTEGER NOT NULL
+            );
             """
         )
 
@@ -340,6 +346,44 @@ def delete_source_resolution_cache(cache_key: str, source: str) -> None:
         db.execute(
             "DELETE FROM source_resolution_cache WHERE cache_key = ? AND source = ?",
             (cache_key, source),
+        )
+
+
+def get_recommend_cache(cache_key: str, max_age_seconds: int) -> list[dict[str, Any]] | None:
+    if not cache_key or max_age_seconds <= 0:
+        return None
+    cutoff = int(time.time()) - int(max_age_seconds)
+    with connect() as db:
+        row = db.execute(
+            """
+            SELECT payload FROM recommend_cache
+            WHERE cache_key = ? AND updated_at >= ?
+            """,
+            (cache_key, cutoff),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        payload = json.loads(str(row["payload"] or "[]"))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, list) else None
+
+
+def save_recommend_cache(cache_key: str, items: list[dict[str, Any]]) -> None:
+    if not cache_key:
+        return
+    now = int(time.time())
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO recommend_cache (cache_key, payload, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(cache_key) DO UPDATE SET
+              payload = excluded.payload,
+              updated_at = excluded.updated_at
+            """,
+            (cache_key, json.dumps(items, ensure_ascii=False), now),
         )
 
 

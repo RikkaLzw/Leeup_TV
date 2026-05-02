@@ -11,6 +11,32 @@ uv run python app.py
 
 打开 `http://127.0.0.1:8000`。
 
+## 轻量部署
+
+生产环境不要上传 `.venv`。如果希望最省资源，1Panel 运行目录指向项目根目录后，可以使用：
+
+```bash
+pip install --no-cache-dir -r requirements.txt
+uvicorn app:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+如果希望更新代码后自动重启，使用项目入口启动即可，默认开启热重载：
+
+```bash
+pip install --no-cache-dir -r requirements.txt
+python app.py
+```
+
+如果用 Docker 部署，仓库内的 `Dockerfile` 已使用 `python:3.12-slim` 和 `--no-cache-dir`，`.dockerignore` 会排除 `.venv`、缓存、数据库等本地文件，避免把无关内容打进镜像。
+
+需要持久化的文件很少：保留 `config.json` 和 `data/rikka_tv.sqlite3` 即可。Docker 部署时建议把 `data/` 挂载成卷，否则容器重建后播放记录和缓存会丢失。
+
+如需关闭 `python app.py` 的热重载：
+
+```powershell
+$env:LEEUPTV_RELOAD="0"; uv run python app.py
+```
+
 ## 配置视频源
 
 编辑 `config.json` 的 `api_site`。只接入你有权使用的 MacCMS API：

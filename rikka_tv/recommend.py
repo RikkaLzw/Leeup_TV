@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from .douban import DoubanClient
+from .db import get_recommend_cache, save_recommend_cache
 from .maccms import MacCMSClient
 
 
@@ -127,8 +128,14 @@ def get_recommend_items(
             cached = _CACHE.get(key)
             if cached and cached[0] > now:
                 return cached[1]
+        cached_items = get_recommend_cache(key, cache_seconds)
+        if cached_items is not None:
+            with _LOCK:
+                _CACHE[key] = (now + cache_seconds, cached_items)
+            return cached_items
 
     items = _fill_missing_posters(_fetch_section_items(client, section_config), config)
+    save_recommend_cache(key, items)
     with _LOCK:
         _CACHE[key] = (now + cache_seconds, items)
     return items
