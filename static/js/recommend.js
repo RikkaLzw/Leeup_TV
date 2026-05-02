@@ -232,11 +232,12 @@
     const kindLabel = item.kind === "movie" ? "电影" : item.kind ? "剧集" : "";
     const poster = item.poster || "";
     const rawPoster = item.raw_poster || "";
+    const displayPoster = rawPoster || poster;
     const resolveHref = `/resolve?title=${encodeURIComponent(item.title || "")}&year=${encodeURIComponent(item.year || "")}&douban_id=${encodeURIComponent(item.id || "")}&kind=${encodeURIComponent(item.kind || "")}&poster=${encodeURIComponent(poster)}&raw_poster=${encodeURIComponent(rawPoster)}&rate=${encodeURIComponent(item.rate || "")}&subtitle=${encodeURIComponent(item.subtitle || "")}`;
     wrapper.innerHTML = `
       <article class="media-card">
         <a class="poster" href="${resolveHref}">
-          ${poster ? `<img src="${escapeAttr(poster)}" alt="${escapeAttr(item.title || "")}" loading="lazy" referrerpolicy="no-referrer" data-raw-poster="${escapeAttr(rawPoster)}" onerror="window.RikkaImages ? window.RikkaImages.retryDouban(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">` : ""}
+          ${displayPoster ? `<img src="${escapeAttr(displayPoster)}" alt="${escapeAttr(item.title || "")}" loading="lazy" referrerpolicy="no-referrer" data-raw-poster="${escapeAttr(rawPoster)}" data-proxy-poster="${escapeAttr(rawPoster ? poster : "")}" onerror="window.RikkaImages ? window.RikkaImages.retryDouban(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">` : ""}
           <span class="poster-fallback">${escapeHtml((item.title || "?").slice(0, 4))}</span>
           ${item.rate ? `<span class="rating-badge">${escapeHtml(item.rate)}</span>` : ""}
         </a>

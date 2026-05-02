@@ -5,8 +5,9 @@
 {% block content %}
   <section class="detail-layout">
     <div class="poster-frame">
-      {% if item.poster %}
-        <img src="{{ item.poster }}" alt="{{ item.title }}" data-raw-poster="{{ item.raw_poster or '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.innerHTML = '<div class=&quot;poster-placeholder&quot;>{{ item.title[:1] }}</div>');">
+      {% set display_poster = item.raw_poster or item.poster %}
+      {% if display_poster %}
+        <img src="{{ display_poster }}" alt="{{ item.title }}" data-raw-poster="{{ item.raw_poster or '' }}" data-proxy-poster="{{ item.poster if item.raw_poster else '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.innerHTML = '<div class=&quot;poster-placeholder&quot;>{{ item.title[:1] }}</div>');">
       {% else %}
         <div class="poster-placeholder">{{ item.title[:1] }}</div>
       {% endif %}
@@ -45,6 +46,4 @@
       {% endif %}
     </div>
   </section>
-
-  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
 {% endblock %}

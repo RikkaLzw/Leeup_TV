@@ -87,13 +87,14 @@
     const episode = Number(record.episode_index || 0);
     const href = `/play/${encodeURIComponent(record.source)}/${encodeURIComponent(record.id)}?episode=${episode}&prefer=1`;
     const cover = record.cover || record.poster || "";
+    const displayCover = record.raw_poster || cover;
     const percent = formatPercent(record);
     const article = document.createElement("article");
     article.className = "media-card local-continue-card";
     article.dataset.continueKey = record._identity || recordIdentity(record) || recordKey(record);
     article.innerHTML = `
       <a class="poster" href="${href}">
-        ${cover ? `<img src="${escapeAttr(cover)}" alt="${escapeAttr(record.title || "")}" loading="lazy" data-raw-poster="${escapeAttr(record.raw_poster || "")}" data-source-poster="${escapeAttr(record.source_poster || "")}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));"><span class="poster-fallback">${escapeHtml((record.title || "?").slice(0, 4))}</span>` : `<span class="poster-fallback">${escapeHtml((record.title || "?").slice(0, 4))}</span>`}
+        ${displayCover ? `<img src="${escapeAttr(displayCover)}" alt="${escapeAttr(record.title || "")}" loading="lazy" data-raw-poster="${escapeAttr(record.raw_poster || "")}" data-proxy-poster="${escapeAttr(record.raw_poster ? cover : "")}" data-source-poster="${escapeAttr(record.source_poster || "")}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));"><span class="poster-fallback">${escapeHtml((record.title || "?").slice(0, 4))}</span>` : `<span class="poster-fallback">${escapeHtml((record.title || "?").slice(0, 4))}</span>`}
         ${percent ? `<span class="progress-badge">${percent}</span>` : ""}
       </a>
       <div class="card-body">
@@ -132,11 +133,13 @@
   function updateExistingCard(key, record) {
     const node = grid.querySelector(`[data-continue-key="${cssEscape(key)}"]`);
     const cover = record.cover || record.poster || "";
-    if (!node || !cover) return;
+    const displayCover = record.raw_poster || cover;
+    if (!node || !displayCover) return;
     const image = node.querySelector(".poster img");
     if (image) {
-      if (image.getAttribute("src") !== cover) image.setAttribute("src", cover);
+      if (image.getAttribute("src") !== displayCover) image.setAttribute("src", displayCover);
       image.dataset.rawPoster = record.raw_poster || "";
+      image.dataset.proxyPoster = record.raw_poster ? cover : "";
       image.dataset.sourcePoster = record.source_poster || "";
       return;
     }
@@ -144,10 +147,11 @@
     if (!poster) return;
     const fallback = poster.querySelector(".poster-fallback");
     const img = document.createElement("img");
-    img.src = cover;
+    img.src = displayCover;
     img.alt = record.title || "";
     img.loading = "lazy";
     img.dataset.rawPoster = record.raw_poster || "";
+    img.dataset.proxyPoster = record.raw_poster ? cover : "";
     img.dataset.sourcePoster = record.source_poster || "";
     img.onerror = function () {
       if (window.RikkaImages) {

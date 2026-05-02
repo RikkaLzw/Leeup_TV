@@ -94,7 +94,6 @@
   <script>
     window.RIKKA_POSTER_MAP = {{ poster_map|default({})|tojson }};
   </script>
-  <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
   <script src="{{ url_for('static', path='/js/continue.js') }}?v={{ asset_version }}"></script>
   <script src="{{ url_for('static', path='/js/recommend.js') }}?v={{ asset_version }}"></script>
 {% endblock %}

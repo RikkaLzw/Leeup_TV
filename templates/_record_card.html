@@ -1,7 +1,8 @@
 <article class="media-card" data-continue-key="{{ (item.search_title or item.title)|lower|replace(' ', '') }}">
+  {% set display_cover = item.raw_poster or item.cover %}
   <a class="poster" href="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ item.episode_index }}&prefer=1">
-    {% if item.cover %}
-      <img src="{{ item.cover }}" alt="{{ item.title }}" loading="lazy" data-raw-poster="{{ item.raw_poster or '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
+    {% if display_cover %}
+      <img src="{{ display_cover }}" alt="{{ item.title }}" loading="lazy" data-raw-poster="{{ item.raw_poster or '' }}" data-proxy-poster="{{ item.cover if item.raw_poster else '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
       <span class="poster-fallback">{{ item.title[:4] }}</span>
     {% else %}
       <span class="poster-fallback">{{ item.title[:4] }}</span>
