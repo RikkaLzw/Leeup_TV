@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 from urllib.parse import unquote
@@ -29,6 +30,7 @@ from .speedtest import prefer_best_source
 
 
 templates = Jinja2Templates(directory=str(ROOT_DIR / "templates"))
+LOGGER = logging.getLogger(__name__)
 HOME_RECOMMEND_KEYS = {"new_movie", "top_movie", "hot_tv", "anime", "variety"}
 BROWSE_DEFAULT_RECOMMEND_KEYS = {
     "电影": {"new_movie", "top_movie"},
@@ -178,9 +180,8 @@ def create_app() -> FastAPI:
         if not title:
             return RedirectResponse(str(request.url_for("index")), status_code=303)
         cfg = load_config()
-        payload = MacCMSClient(cfg).search_all(title)
-        results = payload["results"]
-        exact = _pick_best_resolved_result(title, year, results, kind)
+        video_client = MacCMSClient(cfg)
+        exact, results = _resolve_play_candidate(video_client, cfg, title, year, kind, episode)
         if exact:
             return RedirectResponse(
                 _play_url(
@@ -188,7 +189,7 @@ def create_app() -> FastAPI:
                     exact["source"],
                     exact["id"],
                     episode=episode,
-                    prefer="1",
+                    prefer="resolved",
                     poster=poster or str(exact.get("poster") or ""),
                     raw_poster=raw_poster or str(exact.get("raw_poster") or ""),
                     source_poster=source_poster or str(exact.get("source_poster") or ""),
@@ -280,7 +281,8 @@ def create_app() -> FastAPI:
             and prefer_cfg.get("prefer_by_default", True)
             and prefer != "0"
         )
-        recommended_detail = _pick_recommended_detail(video_client, cfg, detail_data, source, video_id, episode) if prefer_enabled else detail_data
+        auto_prefer_enabled = prefer_enabled and prefer != "resolved"
+        recommended_detail = _pick_recommended_detail(video_client, cfg, detail_data, source, video_id, episode) if auto_prefer_enabled else detail_data
         prefer_douban_poster(recommended_detail, cfg)
         source_metrics = get_source_metrics_map([source, recommended_detail.get("source")]) if prefer_enabled else {}
         player_cfg = cfg.get("player") or {}
@@ -591,6 +593,106 @@ def _douban_detail_item(
         "subtitle": str(subtitle or ""),
         "desc": " · ".join(part for part in desc_parts if part),
     }
+
+
+def _resolve_play_candidate(
+    video_client: MacCMSClient,
+    cfg: dict[str, Any],
+    title: str,
+    year: str = "",
+    kind: str = "",
+    episode: int = 0,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    results: list[dict[str, Any]] = []
+    max_page = _resolve_play_search_max_page(cfg)
+    for source in _ranked_resolve_sources(video_client):
+        try:
+            source_results = video_client.search_source(source, title, max_page)
+        except Exception as exc:
+            LOGGER.warning(
+                "MacCMS resolve-play source search failed: source=%s name=%s query=%r error=%s",
+                source["key"],
+                source.get("name", source["key"]),
+                title,
+                exc,
+            )
+            continue
+
+        if source_results:
+            results.extend(source_results)
+        for candidate in _rank_resolved_results(title, year, source_results, kind):
+            playable = _playable_resolved_candidate(video_client, candidate, title, year, kind, episode)
+            if playable:
+                return playable, results
+    return None, results
+
+
+def _ranked_resolve_sources(video_client: MacCMSClient) -> list[dict[str, Any]]:
+    sources = video_client.available_sources()
+    metrics = get_source_metrics_map()
+
+    def sort_key(entry: tuple[int, dict[str, Any]]) -> tuple[int, float, float, int]:
+        index, source = entry
+        metric = metrics.get(source["key"]) or {}
+        tests_total = int(metric.get("tests_total") or 0)
+        last_ok = bool(metric.get("last_ok"))
+        if tests_total and last_ok:
+            bucket = 0
+        elif tests_total:
+            bucket = 2
+        else:
+            bucket = 1
+        return (
+            bucket,
+            -float(metric.get("source_score") or 0),
+            -float(metric.get("avg_speed_kbps") or 0),
+            index,
+        )
+
+    return [source for _index, source in sorted(enumerate(sources), key=sort_key)]
+
+
+def _resolve_play_search_max_page(cfg: dict[str, Any]) -> int:
+    speed_cfg = cfg.get("speed_test") or {}
+    value = speed_cfg.get("resolve_search_max_page", speed_cfg.get("search_max_page", 1))
+    try:
+        return max(int(value or 1), 1)
+    except (TypeError, ValueError):
+        return 1
+
+
+def _playable_resolved_candidate(
+    video_client: MacCMSClient,
+    candidate: dict[str, Any],
+    title: str,
+    year: str = "",
+    kind: str = "",
+    episode: int = 0,
+) -> dict[str, Any] | None:
+    if _has_playable_episode(candidate, episode):
+        return candidate
+    try:
+        detail = video_client.get_detail(str(candidate.get("source") or ""), str(candidate.get("id") or ""))
+    except Exception as exc:
+        LOGGER.warning(
+            "MacCMS resolve-play detail failed: source=%s id=%s title=%r error=%s",
+            candidate.get("source"),
+            candidate.get("id"),
+            title,
+            exc,
+        )
+        return None
+    if not _pick_best_resolved_result(title, year, [detail], kind):
+        return None
+    return detail if _has_playable_episode(detail, episode) else None
+
+
+def _has_playable_episode(item: dict[str, Any], episode: int = 0) -> bool:
+    episodes = item.get("episodes") or []
+    if not isinstance(episodes, list):
+        return False
+    selected = max(int(episode or 0), 0)
+    return len(episodes) > selected and bool(str(episodes[selected] or "").strip())
 
 
 def _apply_poster_hint(
@@ -1047,15 +1149,15 @@ def _pick_matching_candidate(
     return _pick_best_resolved_result(title, year, candidates, kind) or (candidates[0] if candidates else None)
 
 
-def _pick_best_resolved_result(
+def _rank_resolved_results(
     title: str,
     year: str,
     results: list[dict[str, Any]],
     kind: str = "",
-) -> dict[str, Any] | None:
+) -> list[dict[str, Any]]:
     normalized_title = _normalize_title(title)
     if not normalized_title:
-        return None
+        return []
     dominant_year = _dominant_resolve_year(normalized_title, results, kind) if not year else ""
     ranked: list[tuple[int, int, dict[str, Any]]] = []
     for index, item in enumerate(results):
@@ -1072,8 +1174,21 @@ def _pick_best_resolved_result(
             item,
         ))
     if not ranked:
-        return None
-    return max(ranked, key=lambda entry: (entry[0], entry[1]))[2]
+        return []
+    return [
+        item
+        for _score, _index, item in sorted(ranked, key=lambda entry: (entry[0], entry[1]), reverse=True)
+    ]
+
+
+def _pick_best_resolved_result(
+    title: str,
+    year: str,
+    results: list[dict[str, Any]],
+    kind: str = "",
+) -> dict[str, Any] | None:
+    ranked = _rank_resolved_results(title, year, results, kind)
+    return ranked[0] if ranked else None
 
 
 def _resolve_candidate_score(
