@@ -143,6 +143,36 @@ def create_app() -> FastAPI:
         poster: str = "",
         raw_poster: str = "",
         source_poster: str = "",
+        rate: str = "",
+        subtitle: str = "",
+    ):
+        title = title.strip()
+        if not title:
+            return RedirectResponse(str(request.url_for("index")), status_code=303)
+        detail_data = _douban_detail_item(
+            title=title,
+            year=year,
+            douban_id=douban_id,
+            kind=kind,
+            poster=poster,
+            raw_poster=raw_poster,
+            source_poster=source_poster,
+            rate=rate,
+            subtitle=subtitle,
+        )
+        return _template(request, "detail.html", item=detail_data, show_mobile_nav=True)
+
+    @app.get("/resolve-play", response_class=HTMLResponse, name="resolve_play")
+    async def resolve_play(
+        request: Request,
+        title: str,
+        year: str = "",
+        douban_id: str = "",
+        kind: str = "",
+        poster: str = "",
+        raw_poster: str = "",
+        source_poster: str = "",
+        episode: int = 0,
     ):
         title = title.strip()
         if not title:
@@ -153,16 +183,19 @@ def create_app() -> FastAPI:
         exact = _pick_best_resolved_result(title, year, results, kind)
         if exact:
             return RedirectResponse(
-                _detail_url(
+                _play_url(
                     request,
                     exact["source"],
                     exact["id"],
+                    episode=episode,
+                    prefer="1",
                     poster=poster or str(exact.get("poster") or ""),
                     raw_poster=raw_poster or str(exact.get("raw_poster") or ""),
                     source_poster=source_poster or str(exact.get("source_poster") or ""),
                 ),
                 status_code=303,
             )
+        results = merge_search_results(results)
         prefer_douban_posters(results, cfg)
         return _template(
             request,
@@ -172,6 +205,8 @@ def create_app() -> FastAPI:
             failed=[],
             selected_sources=[],
             resolved_from={"title": title, "year": year, "douban_id": douban_id, "kind": kind},
+            show_mobile_nav=True,
+            active_mobile_level="search",
         )
 
     @app.get("/category/{category_key}", response_class=HTMLResponse, name="category")
@@ -490,6 +525,72 @@ def _detail_url(
     if not params:
         return url
     return f"{url}?{urlencode(params)}"
+
+
+def _play_url(
+    request: Request,
+    source: str,
+    video_id: str,
+    episode: int = 0,
+    prefer: str = "1",
+    poster: str = "",
+    raw_poster: str = "",
+    source_poster: str = "",
+) -> str:
+    url = str(request.url_for("play", source=source, video_id=video_id))
+    params = {
+        key: value
+        for key, value in {
+            "episode": str(max(int(episode or 0), 0)),
+            "prefer": prefer,
+            "poster": poster,
+            "raw_poster": raw_poster,
+            "source_poster": source_poster,
+        }.items()
+        if value
+    }
+    return f"{url}?{urlencode(params)}" if params else url
+
+
+def _douban_detail_item(
+    title: str,
+    year: str = "",
+    douban_id: str = "",
+    kind: str = "",
+    poster: str = "",
+    raw_poster: str = "",
+    source_poster: str = "",
+    rate: str = "",
+    subtitle: str = "",
+) -> dict[str, Any]:
+    kind = str(kind or "").strip()
+    type_label = "电影" if kind == "movie" else "剧集" if kind in {"tv", "show"} else "豆瓣推荐"
+    desc_parts = []
+    if subtitle:
+        desc_parts.append(subtitle)
+    if rate:
+        desc_parts.append(f"豆瓣评分 {rate}")
+    return {
+        "provider": "douban",
+        "id": str(douban_id or ""),
+        "douban_id": str(douban_id or ""),
+        "title": title,
+        "poster": poster or raw_poster or source_poster,
+        "raw_poster": raw_poster,
+        "source_poster": source_poster,
+        "poster_source": "douban" if (poster or raw_poster) else "",
+        "source": "",
+        "source_name": "豆瓣",
+        "episodes": [],
+        "episodes_titles": [],
+        "year": str(year or "").strip(),
+        "class": type_label,
+        "type_name": type_label,
+        "kind": kind,
+        "rate": str(rate or ""),
+        "subtitle": str(subtitle or ""),
+        "desc": " · ".join(part for part in desc_parts if part),
+    }
 
 
 def _apply_poster_hint(
