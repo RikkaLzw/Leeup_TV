@@ -246,6 +246,7 @@ def create_app() -> FastAPI:
             cfg = load_config()
             detail_data = MacCMSClient(cfg).get_detail(source, video_id)
             _apply_poster_hint(detail_data, poster=poster, raw_poster=raw_poster, source_poster=source_poster)
+            detail_data["resolve_kind"] = _infer_resolve_kind(detail_data)
         except Exception as exc:
             _flash(request, f"获取详情失败：{exc}", "error")
             return RedirectResponse(str(request.url_for("index")), status_code=303)
@@ -589,6 +590,7 @@ def _douban_detail_item(
         "class": type_label,
         "type_name": type_label,
         "kind": kind,
+        "resolve_kind": kind,
         "rate": str(rate or ""),
         "subtitle": str(subtitle or ""),
         "desc": " · ".join(part for part in desc_parts if part),
