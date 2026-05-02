@@ -33,8 +33,10 @@
     "recommend_source_probe_limit": 5
   },
   "player": {
-    "skip_intro_seconds": 90,
-    "skip_outro_seconds": 90
+    "skip_intro_enabled": false,
+    "skip_intro_seconds": 0,
+    "skip_outro_enabled": false,
+    "skip_outro_seconds": 0
   },
   "douban": {
     "base_url": "https://m.douban.com",
@@ -339,18 +341,6 @@
         "kind": "tv",
         "category": "show",
         "type": "show",
-        "limit": 12,
-        "page_limit": 60
-      },
-      {
-        "key": "documentary",
-        "title": "纪录片",
-        "level1": "纪录片",
-        "level2": "纪录片",
-        "method": "recommend",
-        "kind": "movie",
-        "category": "纪录片",
-        "sort": "U",
         "limit": 12,
         "page_limit": 60
       }

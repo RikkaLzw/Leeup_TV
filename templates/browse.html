@@ -9,11 +9,17 @@
         <h1>{{ browse.level1 }}</h1>
       </div>
     </div>
-    <div class="recommend-filters browse-filters" id="recommendFilters" aria-label="{{ browse.level1 }}筛选">
+    <div class="recommend-filters browse-filters" id="recommendFilters" data-default-pagination="always" aria-label="{{ browse.level1 }}筛选">
       <div class="filter-row" data-filter-level="level2">
         <span>分类</span>
         <div class="filter-tabs">
           <button class="filter-tab active" type="button" data-filter-level="level2" data-filter-value="all">全部</button>
+        </div>
+      </div>
+      <div class="filter-row" data-filter-level="region">
+        <span>地区</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" type="button" data-filter-level="region" data-filter-value="all">全部</button>
         </div>
       </div>
     </div>
@@ -21,11 +27,15 @@
 
   {% for section in browse.sections %}
     <section
-      class="section recommend-section"
+      class="section recommend-section{% if section.filter_only %} filter-only-section{% endif %}"
       id="section-{{ section.key }}"
       data-section-key="{{ section.key }}"
       data-level1="{{ section.level1 }}"
       data-level2="{{ section.level2 }}"
+      data-region="{{ section.region }}"
+      data-filter-group="{{ section.filter_group }}"
+      data-filter-label="{{ section.filter_label }}"
+      {% if section.filter_only %}hidden{% endif %}
     >
       <div class="section-title">
         <div>

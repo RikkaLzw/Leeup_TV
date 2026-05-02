@@ -14,12 +14,6 @@
         <div id="player" class="art-player"></div>
         <div class="player-loading-hint" id="playerLoadingHint" hidden>正在加载视频</div>
         <div class="player-gesture-hint" id="playerGestureHint" hidden>3x</div>
-        <div class="player-mobile-actions" aria-label="播放操作">
-          {% if item.episodes|length > 1 %}
-            <button type="button" data-player-sheet="episodes">选集</button>
-          {% endif %}
-          <button type="button" data-player-sheet="sources">换源</button>
-        </div>
       </div>
       <div class="player-info">
         <div>
@@ -36,16 +30,16 @@
     </div>
 
     <aside class="player-sidebar{% if item.episodes|length <= 1 %} no-episodes{% endif %}" id="playerSheet">
-      <div class="player-sheet-handle" aria-hidden="true"></div>
-      <button class="player-sheet-close" id="playerSheetClose" type="button" aria-label="关闭浮层">×</button>
-      {% if item.episodes|length > 1 %}
-        <div class="mobile-player-tabs" role="tablist" aria-label="播放控制">
+      <div class="mobile-player-tabs{% if item.episodes|length <= 1 %} single-tab{% endif %}" role="tablist" aria-label="播放控制">
+        {% if item.episodes|length > 1 %}
           <button class="mobile-player-tab active" type="button" data-mobile-panel="episodes" role="tab" aria-selected="true">选集</button>
           <button class="mobile-player-tab" type="button" data-mobile-panel="sources" role="tab" aria-selected="false">换源</button>
-        </div>
-      {% endif %}
+        {% else %}
+          <button class="mobile-player-tab active" type="button" data-mobile-panel="sources" role="tab" aria-selected="true">换源</button>
+        {% endif %}
+      </div>
 
-      <div class="panel compact prefer-panel">
+      <div class="panel compact prefer-panel{% if item.episodes|length > 1 %} mobile-hidden{% endif %}">
         <div class="section-title small">
           <h2>播放优选</h2>
           <span id="preferStatus">{{ "站内推荐" if item.recommended_by_metrics else ("手动测速" if prefer_enabled else "直连播放") }}</span>

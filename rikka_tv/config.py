@@ -42,8 +42,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "recommend_source_probe_limit": 5,
     },
     "player": {
-        "skip_intro_seconds": 90,
-        "skip_outro_seconds": 90,
+        "skip_intro_enabled": False,
+        "skip_intro_seconds": 0,
+        "skip_outro_enabled": False,
+        "skip_outro_seconds": 0,
     },
     "api_site": {},
 }

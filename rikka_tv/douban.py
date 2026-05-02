@@ -64,7 +64,7 @@ class DoubanClient:
             selected_categories["形式"] = format_
         if region:
             selected_categories["地区"] = region
-        tags = [tag for tag in [category, format_ if not category else "", label, region, year, platform] if tag]
+        tags = [tag for tag in [format_, category, label, region, year, platform] if tag]
         params = {
             "refresh": "0",
             "start": start,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
@@ -14,6 +15,7 @@ HEADERS = {
     "Accept": "application/json,text/plain,*/*",
 }
 M3U8_RE = re.compile(r"https?://[^\"'\s]+?\.m3u8(?:\?[^\"'\s]*)?", re.I)
+LOGGER = logging.getLogger(__name__)
 
 
 class MacCMSClient:
@@ -63,6 +65,13 @@ class MacCMSClient:
                 try:
                     results.extend(future.result())
                 except Exception as exc:
+                    LOGGER.warning(
+                        "MacCMS source search failed: source=%s name=%s query=%r error=%s",
+                        source["key"],
+                        source.get("name", source["key"]),
+                        query,
+                        exc,
+                    )
                     failed.append({"key": source["key"], "name": source.get("name", source["key"]), "error": str(exc)})
 
         results.sort(key=lambda item: (_title_distance(query, item.get("title", "")), item.get("source_name", "")))
@@ -104,6 +113,8 @@ class MacCMSClient:
         episode_index: int = 0,
         full: bool = False,
         selected_sources: list[str] | None = None,
+        expected_year: str = "",
+        expected_kind: str = "",
     ) -> list[dict[str, Any]]:
         prefer_config = self.config.get("speed_test") or {}
         if full:
@@ -115,12 +126,16 @@ class MacCMSClient:
             shortlist_limit = max(_config_int(prefer_config, "shortlist_limit", 12), 1)
             fallback_limit = max(_config_int(prefer_config, "fallback_limit", 8), 1)
         candidates: dict[str, dict[str, Any]] = {}
+        target_year = str(expected_year or "").strip()
+        target_kind = str(expected_kind or "").strip().lower()
         if current_source and current_id:
             try:
                 current = self.get_detail(current_source, current_id)
                 if not title or _title_matches(title, current.get("title", "")):
                     candidates[f"{current['source']}+{current['id']}"] = current
                 title = title or current["title"]
+                target_year = target_year or str(current.get("year") or "").strip()
+                target_kind = target_kind or _infer_item_kind(current)
             except Exception:
                 pass
 
@@ -134,8 +149,12 @@ class MacCMSClient:
                 normalized_title = _normalize_title(item.get("title", ""))
                 if normalized_query == normalized_title or normalized_query in normalized_title or normalized_title in normalized_query:
                     shortlist.append(item)
-                if shortlist_limit and len(shortlist) >= shortlist_limit:
-                    break
+            shortlist.sort(
+                key=lambda item: _candidate_target_score(item, target_year, target_kind, episode_index),
+                reverse=True,
+            )
+            if shortlist_limit:
+                shortlist = shortlist[:shortlist_limit]
             if not shortlist:
                 shortlist = payload["results"] if full else payload["results"][:fallback_limit]
 
@@ -160,7 +179,20 @@ class MacCMSClient:
                     except Exception:
                         continue
 
-        return _dedupe_play_candidates(candidates.values(), title, current_source, current_id, episode_index)
+        deduped = _dedupe_play_candidates(
+            candidates.values(),
+            title,
+            current_source,
+            current_id,
+            episode_index,
+            target_year,
+            target_kind,
+        )
+        return [
+            item for item in deduped
+            if _is_current_candidate(item, current_source, current_id)
+            or _candidate_is_compatible(item, target_year, target_kind, episode_index)
+        ]
 
     def _search_url(self, api: str, query: str, page: int) -> str:
         encoded = quote(query)
@@ -245,8 +277,10 @@ def _dedupe_play_candidates(
     current_source: str | None,
     current_id: str | None,
     episode_index: int,
+    expected_year: str = "",
+    expected_kind: str = "",
 ) -> list[dict[str, Any]]:
-    best_by_url: dict[str, tuple[tuple[int, int, int, int, int, int], int, dict[str, Any]]] = {}
+    best_by_url: dict[str, tuple[tuple[int, int, int, int, int, int, int, int], int, dict[str, Any]]] = {}
     for index, item in enumerate(candidates):
         episodes = item.get("episodes") or []
         if not episodes:
@@ -256,12 +290,21 @@ def _dedupe_play_candidates(
         if not selected_url:
             continue
         canonical_url = _canonical_media_url(selected_url)
-        score = _candidate_dedupe_score(item, title, current_source, current_id, episode_index, selected_url)
+        score = _candidate_dedupe_score(
+            item,
+            title,
+            current_source,
+            current_id,
+            episode_index,
+            selected_url,
+            expected_year,
+            expected_kind,
+        )
         existing = best_by_url.get(canonical_url)
         if not existing or score > existing[0]:
             best_by_url[canonical_url] = (score, index, item)
 
-    best_by_source: dict[str, tuple[tuple[int, int, int, int, int, int], int, dict[str, Any]]] = {}
+    best_by_source: dict[str, tuple[tuple[int, int, int, int, int, int, int, int], int, dict[str, Any]]] = {}
     for score, index, item in best_by_url.values():
         source = str(item.get("source") or "")
         existing = best_by_source.get(source)
@@ -278,21 +321,116 @@ def _candidate_dedupe_score(
     current_id: str | None,
     episode_index: int,
     selected_url: str,
-) -> tuple[int, int, int, int, int, int]:
+    expected_year: str = "",
+    expected_kind: str = "",
+) -> tuple[int, int, int, int, int, int, int, int]:
     normalized_query = _normalize_title(title)
     normalized_title = _normalize_title(item.get("title") or "")
     is_current = str(item.get("source") or "") == str(current_source or "") and str(item.get("id") or "") == str(current_id or "")
     is_exact_title = bool(normalized_query and normalized_query == normalized_title)
     episodes = item.get("episodes") or []
     has_requested_episode = len(episodes) > max(int(episode_index or 0), 0)
+    target_score = _candidate_target_score(item, expected_year, expected_kind, episode_index)
     return (
         int(is_current),
         int(is_exact_title),
+        target_score,
+        int(str(expected_year or "") and str(item.get("year") or "") == str(expected_year or "")),
+        int(expected_kind and _infer_item_kind(item) == expected_kind),
         max(0, 2 - _title_distance(title, item.get("title") or "")),
         int(has_requested_episode),
         _media_url_score(selected_url),
-        min(len(episodes), 999),
     )
+
+
+def _candidate_target_score(
+    item: dict[str, Any],
+    expected_year: str = "",
+    expected_kind: str = "",
+    episode_index: int = 0,
+) -> int:
+    score = 0
+    expected_year = str(expected_year or "").strip()
+    expected_kind = str(expected_kind or "").strip().lower()
+    item_year = str(item.get("year") or "").strip()
+    item_kind = _infer_item_kind(item)
+    episodes = item.get("episodes") or []
+    if expected_year:
+        if item_year == expected_year:
+            score += 80
+        elif item_year:
+            score -= 60
+    if expected_kind:
+        if item_kind == expected_kind:
+            score += 60
+        elif item_kind:
+            score -= 80
+    if expected_kind == "movie":
+        if len(episodes) <= 1:
+            score += 18
+        elif len(episodes) >= 10:
+            score -= 40
+    elif expected_kind == "tv":
+        if len(episodes) > 1:
+            score += 14
+        elif len(episodes) == 1:
+            score -= 8
+    if len(episodes) > max(int(episode_index or 0), 0):
+        score += 8
+    return score
+
+
+def _candidate_is_compatible(
+    item: dict[str, Any],
+    expected_year: str = "",
+    expected_kind: str = "",
+    episode_index: int = 0,
+) -> bool:
+    expected_kind = str(expected_kind or "").strip().lower()
+    if not expected_kind:
+        return True
+    episodes = item.get("episodes") or []
+    item_kind = _infer_item_kind(item)
+    if expected_kind == "movie":
+        if item_kind == "tv":
+            return False
+        if len(episodes) >= 10:
+            return False
+        return len(episodes) > max(int(episode_index or 0), 0)
+    if expected_kind == "tv":
+        if item_kind == "movie":
+            return False
+        return len(episodes) > max(int(episode_index or 0), 0)
+    return True
+
+
+def _is_current_candidate(item: dict[str, Any], current_source: str | None, current_id: str | None) -> bool:
+    return str(item.get("source") or "") == str(current_source or "") and str(item.get("id") or "") == str(current_id or "")
+
+
+def _infer_item_kind(item: dict[str, Any]) -> str:
+    if _is_movie_type(item):
+        return "movie"
+    if _is_tv_type(item):
+        return "tv"
+    episodes = item.get("episodes") or []
+    if len(episodes) > 3:
+        return "tv"
+    if len(episodes) == 1:
+        return "movie"
+    return ""
+
+
+def _is_movie_type(item: dict[str, Any]) -> bool:
+    value = str(item.get("type_name") or "")
+    return any(word in value for word in ("电影", "片", "纪录", "记录"))
+
+
+def _is_tv_type(item: dict[str, Any]) -> bool:
+    value = str(item.get("type_name") or "")
+    if _is_movie_type(item):
+        return False
+    return any(word in value for word in ("剧", "连续", "综艺", "动漫", "番"))
 
 
 def _canonical_media_url(url: str) -> str:

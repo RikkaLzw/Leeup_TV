@@ -4,45 +4,78 @@
 
   const sections = Array.from(document.querySelectorAll(".recommend-section"));
   const hasLevel1Filter = Boolean(filters.querySelector('[data-filter-level="level1"]'));
-  const state = { level1: "all", level2: "all" };
+  const defaultPagination = filters.dataset.defaultPagination || "";
+  const state = { level1: "all", level2: "all", region: "all" };
   const pagedSections = new Map();
   const pageCache = new Map();
+  sections.forEach((section) => {
+    const title = section.querySelector(".section-title h2");
+    if (title) section.dataset.originalTitle = title.textContent || "";
+  });
 
   function sectionMatches(section, patch) {
     const next = { ...state, ...patch };
-    return ["level1", "level2"].every((level) => {
+    if (next.level1 !== "all" && section.dataset.level1 !== next.level1) return false;
+    if (next.level2 !== "all") {
+      if (next.region !== "all") return false;
+      return section.dataset.filterGroup !== "region" && section.dataset.level2 === next.level2;
+    }
+    if (next.region !== "all") {
+      return section.dataset.filterGroup === "region" && regionValue(section) === next.region;
+    }
+    return true;
+  }
+
+  function baseMatches(section, patch = {}) {
+    const next = { ...state, ...patch };
+    return ["level1"].every((level) => {
       return next[level] === "all" || section.dataset[level] === next[level];
     });
   }
 
   function valuesFor(level) {
-    const priorPatch = { level1: "all", level2: "all" };
-    if (level === "level2") priorPatch.level1 = state.level1;
+    const priorPatch = { level1: "all" };
+    if (level === "level2" || level === "region") priorPatch.level1 = state.level1;
     const values = sections
-      .filter((section) => sectionMatches(section, priorPatch))
-      .map((section) => section.dataset[level] || "")
-      .filter(Boolean);
-    return Array.from(new Set(values));
+      .filter((section) => baseMatches(section, priorPatch))
+      .filter((section) => {
+        if (level === "level2") return section.dataset.filterGroup === "category";
+        if (level === "region") return section.dataset.filterGroup === "region";
+        return true;
+      })
+      .map((section) => ({
+        value: filterValue(section, level),
+        label: level === "level1"
+          ? section.dataset.level1 || ""
+          : section.dataset.filterLabel || section.dataset.level2 || ""
+      }))
+      .filter((item) => item.value && item.label);
+    const seen = new Set();
+    return values.filter((item) => {
+      if (seen.has(item.value)) return false;
+      seen.add(item.value);
+      return true;
+    });
   }
 
   function renderLevel(level) {
     const row = filters.querySelector(`[data-filter-level="${level}"]`);
     const tabs = row?.querySelector(".filter-tabs");
     if (!tabs) return;
-    if (level === "level2" && hasLevel1Filter && state.level1 === "all") {
+    if ((level === "level2" || level === "region") && hasLevel1Filter && state.level1 === "all") {
       row.hidden = true;
-      state.level2 = "all";
+      state[level] = "all";
       return;
     }
     row.hidden = false;
     const values = valuesFor(level);
-    if (state[level] !== "all" && !values.includes(state[level])) {
+    if (state[level] !== "all" && !values.some((item) => item.value === state[level])) {
       state[level] = "all";
     }
     tabs.innerHTML = "";
     tabs.appendChild(createButton(level, "all", "全部"));
-    for (const value of values) {
-      tabs.appendChild(createButton(level, value, value));
+    for (const item of values) {
+      tabs.appendChild(createButton(level, item.value, item.label));
     }
   }
 
@@ -59,9 +92,17 @@
   function applyFilters() {
     if (hasLevel1Filter) renderLevel("level1");
     renderLevel("level2");
-    const shouldPage = state.level2 !== "all";
+    renderLevel("region");
+    resetComboSections();
+    const shouldPage = shouldUsePagination();
+    const comboSection = findRequestSection();
     sections.forEach((section) => {
-      section.hidden = !sectionMatches(section, {});
+      if (section.classList.contains("filter-only-section")) {
+        section.hidden = true;
+        resetPagination(section);
+        return;
+      }
+      section.hidden = Boolean(comboSection) || !sectionMatches(section, {});
       if (!section.hidden) {
         if (shouldPage) {
           renderPagination(section, 1, true);
@@ -72,6 +113,9 @@
         resetPagination(section);
       }
     });
+    if (comboSection) {
+      renderRequestSection(comboSection);
+    }
   }
 
   function renderPreview(section) {
@@ -99,11 +143,14 @@
     const pageSize = Math.max(Number(grid.dataset.pageSize || 12), 1);
     const nextPage = Math.max(page || 1, 1);
     if (resetGrid || pageCache.get(cacheKey(section, nextPage)) || nextPage > Math.ceil(items.length / pageSize)) {
-      await loadPage(section, nextPage, pageSize);
+      const loaded = await loadPage(section, nextPage, pageSize);
+      if (!loaded && nextPage > 1) {
+        return renderPagination(section, nextPage - 1);
+      }
     }
 
     const latestItems = Array.from(grid.querySelectorAll(".paged-item"));
-    const hasMore = section.dataset.hasMore === "1";
+    const hasMore = section.dataset.hasMore === "1" || nextPage * pageSize < latestItems.length;
     pagedSections.set(section, nextPage);
 
     latestItems.forEach((item, index) => {
@@ -137,7 +184,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           level1: section.dataset.level1 || "",
-          level2: section.dataset.level2 || "",
+          level2: section.dataset.requestLevel2 || section.dataset.level2 || "",
+          region: section.dataset.requestRegion || "",
           page,
           page_size: pageSize
         })
@@ -146,7 +194,7 @@
       if (!res.ok) throw new Error(data.error || "加载失败");
       pageCache.set(key, data);
       applyLoadedPage(section, page, pageSize, data);
-      return true;
+      return page <= 1 || Boolean((data.items || []).length);
     } catch {
       section.dataset.hasMore = "0";
       return false;
@@ -184,7 +232,7 @@
     const kindLabel = item.kind === "movie" ? "电影" : item.kind ? "剧集" : "";
     const poster = item.poster || "";
     const rawPoster = item.raw_poster || "";
-    const resolveHref = `/resolve?title=${encodeURIComponent(item.title || "")}&year=${encodeURIComponent(item.year || "")}&douban_id=${encodeURIComponent(item.id || "")}&kind=${encodeURIComponent(item.kind || "")}`;
+    const resolveHref = `/resolve?title=${encodeURIComponent(item.title || "")}&year=${encodeURIComponent(item.year || "")}&douban_id=${encodeURIComponent(item.id || "")}&kind=${encodeURIComponent(item.kind || "")}&poster=${encodeURIComponent(poster)}&raw_poster=${encodeURIComponent(rawPoster)}`;
     wrapper.innerHTML = `
       <article class="media-card">
         <a class="poster" href="${resolveHref}">
@@ -212,7 +260,13 @@
   }
 
   function cacheKey(section, page) {
-    return `${section.dataset.level1 || ""}|${section.dataset.level2 || ""}|${page}`;
+    return `${section.dataset.level1 || ""}|${section.dataset.requestLevel2 || section.dataset.level2 || ""}|${section.dataset.requestRegion || ""}|${page}`;
+  }
+
+  function shouldUsePagination() {
+    if (state.level2 !== "all" || state.region !== "all") return true;
+    if (defaultPagination === "always") return true;
+    return defaultPagination === "type" && state.level1 !== "all";
   }
 
   function resetPagination(section) {
@@ -228,6 +282,15 @@
     pagedSections.delete(section);
   }
 
+  function resetComboSections() {
+    sections.forEach((section) => {
+      delete section.dataset.requestLevel2;
+      delete section.dataset.requestRegion;
+      const title = section.querySelector(".section-title h2");
+      if (title && section.dataset.originalTitle) title.textContent = section.dataset.originalTitle;
+    });
+  }
+
   filters.addEventListener("click", (event) => {
     const button = event.target.closest(".filter-tab");
     if (!button) return;
@@ -236,6 +299,7 @@
     state[level] = button.dataset.filterValue || "all";
     if (level === "level1") {
       state.level2 = "all";
+      state.region = "all";
     }
     applyFilters();
   });
@@ -263,6 +327,64 @@
 
   function escapeAttr(value) {
     return escapeHtml(value);
+  }
+
+  function findRequestSection() {
+    if (state.level2 === "all" && state.region === "all") return null;
+    if (state.level2 !== "all") {
+      return sections.find((section) => (
+        (state.level1 === "all" || section.dataset.level1 === state.level1)
+        && section.dataset.filterGroup === "category"
+        && section.dataset.level2 === state.level2
+        && !section.classList.contains("filter-only-section")
+      )) || findVisibleCarrierSection();
+    }
+    return sections.find((section) => (
+      (state.level1 === "all" || section.dataset.level1 === state.level1)
+      && section.dataset.filterGroup === "region"
+      && regionValue(section) === state.region
+      && !section.classList.contains("filter-only-section")
+    )) || findVisibleCarrierSection();
+  }
+
+  function findVisibleCarrierSection() {
+    return sections.find((section) => (
+      (state.level1 === "all" || section.dataset.level1 === state.level1)
+      && !section.classList.contains("filter-only-section")
+      && section.querySelector(".paged-grid")
+      && section.querySelector(".pagination")
+    )) || null;
+  }
+
+  function renderRequestSection(section) {
+    const regionLabel = state.region === "all" ? "" : filterLabel("region", state.region);
+    const categoryLabel = state.level2 === "all" ? "" : filterLabel("level2", state.level2);
+    section.hidden = false;
+    if (state.level2 !== "all") section.dataset.requestLevel2 = state.level2;
+    if (state.region !== "all") section.dataset.requestRegion = state.region;
+    const title = section.querySelector(".section-title h2");
+    if (title) title.textContent = `${regionLabel}${categoryLabel}` || section.dataset.originalTitle || "推荐";
+    renderPagination(section, 1, true);
+  }
+
+  function filterLabel(level, value) {
+    const button = filters.querySelector(`[data-filter-level="${level}"][data-filter-value="${cssEscape(value)}"]`);
+    return button?.textContent || value;
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && CSS.escape) return CSS.escape(value);
+    return String(value).replace(/["\\]/g, "\\$&");
+  }
+
+  function filterValue(section, level) {
+    if (level === "level1") return section.dataset.level1 || "";
+    if (level === "region") return regionValue(section);
+    return section.dataset.level2 || "";
+  }
+
+  function regionValue(section) {
+    return section.dataset.region || section.dataset.filterLabel || section.dataset.level2 || "";
   }
 
   applyFilters();

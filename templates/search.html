@@ -16,14 +16,6 @@
       </div>
     </div>
 
-    {% if failed %}
-      <div class="notice">
-        {% for item in failed %}
-          <span>{{ item.name }}：{{ item.error }}</span>
-        {% endfor %}
-      </div>
-    {% endif %}
-
     {% if results %}
       <div class="media-grid">
         {% for item in results %}

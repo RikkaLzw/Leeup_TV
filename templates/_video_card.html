@@ -1,5 +1,5 @@
 <article class="media-card">
-  <a class="poster" href="{{ url_for('detail', source=item.source, video_id=item.id) }}">
+  <a class="poster" href="{{ url_for('detail', source=item.source, video_id=item.id) }}?poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">
     {% if item.poster %}
       <img src="{{ item.poster }}" alt="{{ item.title }}" loading="lazy" data-raw-poster="{{ item.raw_poster or '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
       <span class="poster-fallback">{{ item.title[:4] }}</span>
@@ -8,9 +8,10 @@
     {% endif %}
   </a>
   <div class="card-body">
-    <a class="card-title" href="{{ url_for('detail', source=item.source, video_id=item.id) }}">{{ item.title }}</a>
+    <a class="card-title" href="{{ url_for('detail', source=item.source, video_id=item.id) }}?poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">{{ item.title }}</a>
     <div class="card-meta">
       <span>{{ item.source_name }}</span>
+      {% if item.source_count and item.source_count > 1 %}<span>共 {{ item.source_count }} 个源</span>{% endif %}
       {% if item.year %}<span>{{ item.year }}</span>{% endif %}
       {% if item.episodes %}<span>{{ item.episodes|length }} 集</span>{% endif %}
     </div>

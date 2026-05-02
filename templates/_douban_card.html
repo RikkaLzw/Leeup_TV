@@ -1,5 +1,5 @@
 <article class="media-card">
-  <a class="poster" href="{{ url_for('resolve') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&douban_id={{ item.id|urlencode }}&kind={{ item.kind|urlencode }}">
+  <a class="poster" href="{{ url_for('resolve') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&douban_id={{ item.id|urlencode }}&kind={{ item.kind|urlencode }}&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}">
     {% if item.poster %}
       <img src="{{ item.poster }}" alt="{{ item.title }}" loading="lazy" referrerpolicy="no-referrer" data-raw-poster="{{ item.raw_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryDouban(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
       <span class="poster-fallback">{{ item.title[:4] }}</span>
@@ -11,7 +11,7 @@
     {% endif %}
   </a>
   <div class="card-body">
-    <a class="card-title" href="{{ url_for('resolve') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&douban_id={{ item.id|urlencode }}&kind={{ item.kind|urlencode }}">{{ item.title }}</a>
+    <a class="card-title" href="{{ url_for('resolve') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&douban_id={{ item.id|urlencode }}&kind={{ item.kind|urlencode }}&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}">{{ item.title }}</a>
     <div class="card-meta">
       {% if item.year %}<span>{{ item.year }}</span>{% endif %}
       {% if item.kind %}<span>{{ "电影" if item.kind == "movie" else "剧集" }}</span>{% endif %}

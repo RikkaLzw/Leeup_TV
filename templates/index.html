@@ -8,7 +8,7 @@
   {% endif %}
 
   <section class="recommend-browser">
-    <div class="recommend-filters" id="recommendFilters" aria-label="推荐筛选">
+    <div class="recommend-filters" id="recommendFilters" data-default-pagination="type" aria-label="推荐筛选">
       <div class="filter-row" data-filter-level="level1">
         <span>类型</span>
         <div class="filter-tabs">
@@ -19,6 +19,12 @@
         <span>分类</span>
         <div class="filter-tabs">
           <button class="filter-tab active" type="button" data-filter-level="level2" data-filter-value="all">全部</button>
+        </div>
+      </div>
+      <div class="filter-row" data-filter-level="region">
+        <span>地区</span>
+        <div class="filter-tabs">
+          <button class="filter-tab active" type="button" data-filter-level="region" data-filter-value="all">全部</button>
         </div>
       </div>
     </div>
@@ -52,11 +58,15 @@
 
   {% for section in recommend_sections %}
     <section
-      class="section recommend-section"
+      class="section recommend-section{% if section.filter_only %} filter-only-section{% endif %}"
       id="section-{{ section.key }}"
       data-section-key="{{ section.key }}"
       data-level1="{{ section.level1 }}"
       data-level2="{{ section.level2 }}"
+      data-region="{{ section.region }}"
+      data-filter-group="{{ section.filter_group }}"
+      data-filter-label="{{ section.filter_label }}"
+      {% if section.filter_only %}hidden{% endif %}
     >
       <div class="section-title">
         <div>
@@ -64,15 +74,18 @@
         </div>
       </div>
       {% if section["items"] %}
-        <div class="media-grid">
+        <div class="media-grid paged-grid" data-page-size="12" data-preview-size="12">
           {% for item in section["items"] %}
-            {% if item.provider == "douban" %}
-              {% include "_douban_card.html" %}
-            {% else %}
-              {% include "_video_card.html" %}
-            {% endif %}
+            <div class="paged-item">
+              {% if item.provider == "douban" %}
+                {% include "_douban_card.html" %}
+              {% else %}
+                {% include "_video_card.html" %}
+              {% endif %}
+            </div>
           {% endfor %}
         </div>
+        <div class="pagination" hidden></div>
       {% else %}
         <div class="empty-state">这个栏目暂时没有推荐结果。</div>
       {% endif %}

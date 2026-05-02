@@ -11,6 +11,18 @@ from .maccms import MacCMSClient
 
 _CACHE: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 _LOCK = threading.Lock()
+_DOUBAN_MOVIE_CATEGORIES = ["喜剧", "爱情", "动作", "科幻", "动画", "悬疑", "犯罪", "惊悚", "冒险", "音乐", "历史", "奇幻", "恐怖", "战争", "传记", "歌舞", "武侠", "情色", "灾难", "西部", "纪录片", "短片"]
+_DOUBAN_TV_CATEGORIES = ["喜剧", "爱情", "悬疑", "动画", "武侠", "古装", "家庭", "犯罪", "科幻", "恐怖", "历史", "战争", "动作", "冒险", "传记", "剧情", "奇幻", "惊悚", "灾难", "歌舞", "音乐"]
+_DOUBAN_ANIME_CATEGORIES = ["动画", "喜剧", "爱情", "动作", "冒险", "科幻", "奇幻", "悬疑", "家庭", "音乐"]
+_DOUBAN_VARIETY_CATEGORIES = ["真人秀", "脱口秀", "音乐", "歌舞"]
+_DOUBAN_CATEGORY_MAP = {
+    "电影": set(_DOUBAN_MOVIE_CATEGORIES),
+    "剧集": set(_DOUBAN_TV_CATEGORIES),
+    "动漫": set(_DOUBAN_ANIME_CATEGORIES),
+    "综艺": set(_DOUBAN_VARIETY_CATEGORIES),
+}
+_DOUBAN_MOVIE_REGIONS = ["华语", "欧美", "韩国", "日本", "中国大陆", "美国", "中国香港", "中国台湾", "英国", "法国", "德国", "意大利", "西班牙", "印度", "泰国", "俄罗斯", "加拿大", "澳大利亚", "爱尔兰", "瑞典", "巴西", "丹麦"]
+_DOUBAN_TV_REGIONS = ["华语", "欧美", "国外", "韩国", "日本", "中国大陆", "中国香港", "美国", "英国", "泰国", "中国台湾", "意大利", "法国", "德国", "西班牙", "俄罗斯", "瑞典", "巴西", "丹麦", "印度", "加拿大", "爱尔兰", "澳大利亚"]
 
 
 def get_recommend_sections(
@@ -18,23 +30,48 @@ def get_recommend_sections(
     force_refresh: bool = False,
     level1: str | None = None,
     expanded: bool = False,
+    keys: set[str] | None = None,
+    include_filter_sections: bool = False,
 ) -> list[dict[str, Any]]:
-    section_configs = config.get("recommendations", {}).get("sections") or _default_sections()
-    active_configs = [
-        section
-        for section in section_configs
-        if not section.get("disabled") and (not level1 or section.get("level1") == level1)
-    ]
+    section_configs = _recommend_section_configs(config)
+    selected_keys = None if keys is None else {str(key) for key in keys}
+    active_configs: list[dict[str, Any]] = []
+    metadata_only_keys: set[str] = set()
+    for section in section_configs:
+        if section.get("disabled") or (level1 and section.get("level1") != level1):
+            continue
+        key = str(section.get("key") or section.get("title", ""))
+        selected = selected_keys is None or key in selected_keys
+        metadata_only = include_filter_sections and not selected and _is_filter_metadata_section(section)
+        if not selected and not metadata_only:
+            continue
+        active_configs.append(section)
+        if metadata_only:
+            metadata_only_keys.add(key)
     if not active_configs:
         return []
     section_workers = min(int(config.get("recommendations", {}).get("section_workers") or 3), len(active_configs))
     client = DoubanClient(config)
     sections_by_key: dict[str, dict[str, Any]] = {}
+    for section_config in active_configs:
+        key = str(section_config.get("key") or section_config.get("title", ""))
+        sections_by_key[key] = _section_payload(section_config, [], force_filter_only=key in metadata_only_keys)
 
+    fetch_configs = [
+        section_config
+        for section_config in active_configs
+        if section_config.get("prefetch", True) is not False
+        and not section_config.get("filter_only")
+        and str(section_config.get("key") or section_config.get("title", "")) not in metadata_only_keys
+    ]
+    if not fetch_configs:
+        return [sections_by_key[str(section.get("key") or section.get("title", ""))] for section in active_configs]
+
+    section_workers = min(section_workers, len(fetch_configs))
     with ThreadPoolExecutor(max_workers=section_workers) as pool:
         futures = {
             pool.submit(get_recommend_items, client, config, _section_fetch_config(section_config, expanded), force_refresh): section_config
-            for section_config in active_configs
+            for section_config in fetch_configs
         }
         for future in as_completed(futures):
             section_config = futures[future]
@@ -43,16 +80,29 @@ def get_recommend_sections(
             except Exception:
                 items = []
             key = str(section_config.get("key") or section_config.get("title", ""))
-            sections_by_key[key] = {
-                "key": key,
-                "title": section_config.get("title") or "推荐",
-                "level1": section_config.get("level1") or "全部",
-                "level2": section_config.get("level2") or section_config.get("title") or "全部",
-                "source": "douban",
-                "items": items,
-            }
+            sections_by_key[key] = _section_payload(section_config, items)
 
     return [sections_by_key[str(section.get("key") or section.get("title", ""))] for section in active_configs]
+
+
+def _section_payload(
+    section_config: dict[str, Any],
+    items: list[dict[str, Any]],
+    force_filter_only: bool = False,
+) -> dict[str, Any]:
+    key = str(section_config.get("key") or section_config.get("title", ""))
+    return {
+        "key": key,
+        "title": section_config.get("title") or "推荐",
+        "level1": section_config.get("level1") or "全部",
+        "level2": section_config.get("level2") or section_config.get("title") or "全部",
+        "region": section_config.get("region") or "",
+        "filter_group": _section_filter_group(section_config),
+        "filter_label": _section_filter_label(section_config),
+        "filter_only": bool(force_filter_only or section_config.get("filter_only")),
+        "source": "douban",
+        "items": items,
+    }
 
 
 def _section_fetch_config(section_config: dict[str, Any], expanded: bool) -> dict[str, Any]:
@@ -78,14 +128,14 @@ def get_recommend_items(
             if cached and cached[0] > now:
                 return cached[1]
 
-    items = _fill_missing_posters(_prefer_canonical_douban_posters(_fetch_section_items(client, section_config), client), config)
+    items = _fill_missing_posters(_fetch_section_items(client, section_config), config)
     with _LOCK:
         _CACHE[key] = (now + cache_seconds, items)
     return items
 
 
 def get_recommend_config(config: dict[str, Any], key: str) -> dict[str, Any] | None:
-    sections = config.get("recommendations", {}).get("sections") or _default_sections()
+    sections = _recommend_section_configs(config)
     for section in sections:
         if section.get("key") == key:
             return section
@@ -93,7 +143,7 @@ def get_recommend_config(config: dict[str, Any], key: str) -> dict[str, Any] | N
 
 
 def get_recommend_config_by_level(config: dict[str, Any], level1: str, level2: str) -> dict[str, Any] | None:
-    sections = config.get("recommendations", {}).get("sections") or _default_sections()
+    sections = _recommend_section_configs(config)
     for section in sections:
         if section.get("disabled"):
             continue
@@ -103,6 +153,7 @@ def get_recommend_config_by_level(config: dict[str, Any], level1: str, level2: s
 
 
 def _fetch_section_items(client: DoubanClient, section_config: dict[str, Any]) -> list[dict[str, Any]]:
+    section_config = _effective_douban_filter_config(section_config)
     method = section_config.get("method") or "recent_hot"
     kind = section_config.get("kind") or "movie"
     limit = int(section_config.get("limit") or 12)
@@ -137,6 +188,27 @@ def _fetch_section_items(client: DoubanClient, section_config: dict[str, Any]) -
         limit=limit,
         start=start,
     )[:limit]
+
+
+def _effective_douban_filter_config(section_config: dict[str, Any]) -> dict[str, Any]:
+    if section_config.get("method") != "recommend":
+        return section_config
+    level1 = str(section_config.get("level1") or "")
+    kind = str(section_config.get("kind") or "")
+    if kind != "tv":
+        return section_config
+
+    result = dict(section_config)
+    if level1 == "剧集":
+        result.setdefault("format", "电视剧")
+    elif level1 == "综艺":
+        result.setdefault("format", "综艺")
+    elif level1 == "动漫":
+        category = str(result.get("category") or "")
+        if category and category != "动画" and not result.get("label"):
+            result["label"] = category
+        result["category"] = "动画"
+    return result
 
 
 def _fill_missing_posters(items: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -208,6 +280,7 @@ def _normalize_title(value: str) -> str:
 
 
 def _cache_key(section_config: dict[str, Any]) -> str:
+    section_config = _effective_douban_filter_config(section_config)
     parts = [
         section_config.get("key"),
         section_config.get("method"),
@@ -230,6 +303,79 @@ def _cache_key(section_config: dict[str, Any]) -> str:
 def _none_all(value: Any) -> str:
     value = str(value or "")
     return "" if value == "all" else value
+
+
+def _recommend_section_configs(config: dict[str, Any]) -> list[dict[str, Any]]:
+    configured = config.get("recommendations", {}).get("sections") or []
+    sections = configured or _default_sections()
+    return _with_generated_filter_sections(sections)
+
+
+def _with_generated_filter_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    existing_keys = {str(section.get("key") or "") for section in sections}
+    existing_pairs = {
+        (str(section.get("level1") or ""), str(section.get("level2") or ""))
+        for section in sections
+    }
+    existing_filter_keys = {
+        (
+            str(section.get("level1") or ""),
+            _section_filter_group(section),
+            _section_filter_label(section),
+        )
+        for section in sections
+    }
+    result = list(sections)
+    for section in _generated_filter_sections():
+        key = str(section.get("key") or "")
+        pair = (str(section.get("level1") or ""), str(section.get("level2") or ""))
+        filter_key = (
+            str(section.get("level1") or ""),
+            _section_filter_group(section),
+            _section_filter_label(section),
+        )
+        if key in existing_keys or pair in existing_pairs or filter_key in existing_filter_keys:
+            continue
+        result.append(section)
+        existing_keys.add(key)
+        existing_pairs.add(pair)
+        existing_filter_keys.add(filter_key)
+    return result
+
+
+def _is_filter_metadata_section(section_config: dict[str, Any]) -> bool:
+    return section_config.get("filter_only") or _section_filter_group(section_config) in {"category", "region"}
+
+
+def _section_filter_group(section_config: dict[str, Any]) -> str:
+    if section_config.get("filter_group"):
+        return str(section_config["filter_group"])
+    if section_config.get("region"):
+        return "region"
+    category = str(section_config.get("category") or "")
+    level1 = str(section_config.get("level1") or "")
+    if category and category in _DOUBAN_CATEGORY_MAP.get(level1, set()) and _section_filter_label(section_config) == category:
+        return "category"
+    return "featured"
+
+
+def _section_filter_label(section_config: dict[str, Any]) -> str:
+    if section_config.get("filter_label"):
+        return str(section_config["filter_label"])
+    if section_config.get("region"):
+        return str(section_config["region"])
+    label = str(section_config.get("level2") or section_config.get("title") or "")
+    level1 = str(section_config.get("level1") or "")
+    suffixes = [level1]
+    if level1 == "电影":
+        suffixes.append("电影")
+    elif level1 == "剧集":
+        suffixes.extend(["剧集", "剧"])
+    for suffix in suffixes:
+        if suffix and label.endswith(suffix) and len(label) > len(suffix):
+            label = label[: -len(suffix)]
+            break
+    return label or str(section_config.get("level2") or section_config.get("title") or "")
 
 
 def _default_sections() -> list[dict[str, Any]]:
@@ -259,8 +405,68 @@ def _default_sections() -> list[dict[str, Any]]:
         _section("anime", "动漫新番", "动漫", "动漫新番", method="recommend", kind="tv", category="动画", sort="U"),
         _section("anime_movie", "动画电影", "动漫", "动画电影", method="recommend", kind="movie", category="动画", sort="U"),
         _section("variety", "综艺娱乐", "综艺", "综艺娱乐", method="recent_hot", kind="tv", category="show", type="show"),
-        _section("documentary", "纪录片", "纪录片", "纪录片", method="recommend", kind="movie", category="纪录片", sort="U"),
     ]
+
+
+def _generated_filter_sections() -> list[dict[str, Any]]:
+    sections: list[dict[str, Any]] = []
+    specs = {
+        "电影": {
+            "kind": "movie",
+            "categories": _DOUBAN_MOVIE_CATEGORIES,
+            "regions": _DOUBAN_MOVIE_REGIONS,
+        },
+        "剧集": {
+            "kind": "tv",
+            "categories": _DOUBAN_TV_CATEGORIES,
+            "regions": _DOUBAN_TV_REGIONS,
+        },
+        "动漫": {
+            "kind": "tv",
+            "categories": _DOUBAN_ANIME_CATEGORIES,
+            "regions": _DOUBAN_TV_REGIONS,
+        },
+        "综艺": {
+            "kind": "tv",
+            "categories": _DOUBAN_VARIETY_CATEGORIES,
+            "regions": _DOUBAN_TV_REGIONS,
+        },
+    }
+    for level1, spec in specs.items():
+        kind = str(spec["kind"])
+        for category in spec["categories"]:
+            level2 = f"{category}{level1}" if level1 == "电影" else f"{category}剧" if level1 == "剧集" else category
+            sections.append(_section(
+                f"generated_{level1}_{category}",
+                level2,
+                level1,
+                level2,
+                method="recommend",
+                kind=kind,
+                category=category,
+                sort="U",
+                filter_group="category",
+                filter_label=category,
+                filter_only=True,
+                prefetch=False,
+            ))
+        for region in spec["regions"]:
+            level2 = f"{region}{level1}"
+            sections.append(_section(
+                f"generated_{level1}_{region}",
+                level2,
+                level1,
+                level2,
+                method="recommend",
+                kind=kind,
+                region=region,
+                sort="U",
+                filter_group="region",
+                filter_label=region,
+                filter_only=True,
+                prefetch=False,
+            ))
+    return sections
 
 
 def _section(

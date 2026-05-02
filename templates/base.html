@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}?v={{ asset_version }}">
     {% block head %}{% endblock %}
   </head>
-  <body>
+  <body class="{% if show_mobile_nav %}has-mobile-nav{% endif %}">
     <header class="topbar">
       <a class="brand" href="{{ url_for('index') }}">
         <span class="brand-mark">R</span>
