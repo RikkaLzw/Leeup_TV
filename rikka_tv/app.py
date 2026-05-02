@@ -4,6 +4,8 @@ import logging
 import os
 from os import PathLike
 from typing import Any
+from urllib.parse import parse_qs
+from urllib.parse import quote
 from urllib.parse import unquote
 from urllib.parse import urlparse
 from urllib.parse import urlencode
@@ -36,8 +38,51 @@ from .speedtest import prefer_best_source
 
 
 templates = Jinja2Templates(directory=str(ROOT_DIR / "templates"))
+templates.env.filters["direct_poster"] = lambda value: _direct_poster_url(value)
+templates.env.filters["poster_src"] = lambda value: _poster_display_url(value)
 LOGGER = logging.getLogger(__name__)
 HOME_RECOMMEND_KEYS = {"new_movie", "top_movie", "hot_tv", "anime", "variety"}
+
+
+def _direct_poster_url(value: Any) -> str:
+    url = str(value or "").strip()
+    if not url:
+        return ""
+    parsed = urlparse(url)
+    path = parsed.path or url
+    if path == "/image/douban":
+        target = parse_qs(parsed.query).get("url", [""])[0]
+        return unquote(target) if target else ""
+    return url
+
+
+def _poster_display_url(value: Any, cfg: dict[str, Any] | None = None) -> str:
+    url = _direct_poster_url(value)
+    if not url or "doubanio.com" not in url:
+        return url
+    douban_cfg = (cfg or load_config()).get("douban") or {}
+    proxy_type = str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali")
+    proxy_url = str(douban_cfg.get("image_proxy_url") or "")
+    if proxy_type == "server":
+        return f"/image/douban?url={quote(url, safe='')}"
+    if proxy_type == "img3":
+        return _replace_douban_image_host(url, "img3.doubanio.com")
+    if proxy_type == "cmliussss-cdn-tencent":
+        return _replace_douban_image_host(url, "img.doubanio.cmliussss.net")
+    if proxy_type == "cmliussss-cdn-ali":
+        return _replace_douban_image_host(url, "img.doubanio.cmliussss.com")
+    if proxy_type == "custom" and proxy_url:
+        return f"{proxy_url}{quote(url, safe='')}"
+    return url
+
+
+def _replace_douban_image_host(url: str, host: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.netloc or not parsed.netloc.endswith("doubanio.com"):
+        return url
+    return urlunparse(parsed._replace(netloc=host))
+
+
 BROWSE_DEFAULT_RECOMMEND_KEYS = {
     "电影": {"new_movie", "top_movie"},
     "剧集": {"hot_tv"},
@@ -535,6 +580,7 @@ def _template(request: Request, name: str, **context: Any) -> HTMLResponse:
         "speed_test_enabled": cfg.get("speed_test", {}).get("enabled", True),
         "is_home": request.url.path == "/",
         "asset_version": _asset_version(),
+        "image_config": _image_runtime_config(cfg),
         "mobile_nav_items": _mobile_nav_items(),
         "show_mobile_nav": False,
         "active_mobile_level": "",
@@ -553,6 +599,14 @@ def _asset_version() -> str:
     return str(int(max(mtimes, default=0)))
 
 
+def _image_runtime_config(cfg: dict[str, Any]) -> dict[str, str]:
+    douban_cfg = cfg.get("douban") or {}
+    return {
+        "doubanImageProxyType": str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali"),
+        "doubanImageProxyUrl": str(douban_cfg.get("image_proxy_url") or ""),
+    }
+
+
 def _mobile_nav_items() -> list[dict[str, str]]:
     return [
         {"level1": "电影", "label": "电影", "icon": "movie", "kind": "browse"},
@@ -568,8 +622,9 @@ def _recommend_api_item(item: dict[str, Any]) -> dict[str, Any]:
         "provider": item.get("provider") or "",
         "id": str(item.get("id") or ""),
         "title": str(item.get("title") or ""),
-        "poster": str(item.get("poster") or ""),
-        "raw_poster": str(item.get("raw_poster") or ""),
+        "poster": _direct_poster_url(item.get("poster") or ""),
+        "raw_poster": _direct_poster_url(item.get("raw_poster") or ""),
+        "display_poster": _poster_display_url(item.get("raw_poster") or item.get("poster") or ""),
         "rate": str(item.get("rate") or ""),
         "year": str(item.get("year") or ""),
         "kind": str(item.get("kind") or ""),
@@ -648,9 +703,9 @@ def _douban_detail_item(
         "id": str(douban_id or ""),
         "douban_id": str(douban_id or ""),
         "title": title,
-        "poster": poster or raw_poster or source_poster,
-        "raw_poster": raw_poster,
-        "source_poster": source_poster,
+        "poster": _direct_poster_url(poster or raw_poster or source_poster),
+        "raw_poster": _direct_poster_url(raw_poster),
+        "source_poster": _direct_poster_url(source_poster),
         "poster_source": "douban" if (poster or raw_poster) else "",
         "source": "",
         "source_name": "豆瓣",
@@ -878,6 +933,9 @@ def _apply_poster_hint(
     poster = poster.strip()
     raw_poster = raw_poster.strip()
     source_poster = source_poster.strip()
+    poster = _direct_poster_url(poster)
+    raw_poster = _direct_poster_url(raw_poster)
+    source_poster = _direct_poster_url(source_poster)
     if not poster and not raw_poster and not source_poster:
         return item
     fallback = item.get("poster") or item.get("cover") or ""
@@ -919,7 +977,7 @@ def _douban_image_candidates(url: str) -> list[str]:
     hosts = []
     if parsed.netloc:
         hosts.append(parsed.netloc)
-    hosts.extend([f"img{index}.doubanio.com" for index in range(1, 4)])
+    hosts.extend([f"img{index}.doubanio.com" for index in range(1, 10)])
     seen: set[str] = set()
     candidates: list[str] = []
     for host in hosts:

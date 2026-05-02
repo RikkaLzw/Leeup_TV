@@ -232,7 +232,9 @@
     const kindLabel = item.kind === "movie" ? "电影" : item.kind ? "剧集" : "";
     const poster = item.poster || "";
     const rawPoster = item.raw_poster || "";
-    const displayPoster = rawPoster || poster;
+    const displayPoster = window.RikkaImages
+      ? window.RikkaImages.posterSrc(item.display_poster || rawPoster || poster)
+      : (item.display_poster || rawPoster || poster);
     const resolveHref = `/resolve?title=${encodeURIComponent(item.title || "")}&year=${encodeURIComponent(item.year || "")}&douban_id=${encodeURIComponent(item.id || "")}&kind=${encodeURIComponent(item.kind || "")}&poster=${encodeURIComponent(poster)}&raw_poster=${encodeURIComponent(rawPoster)}&rate=${encodeURIComponent(item.rate || "")}&subtitle=${encodeURIComponent(item.subtitle || "")}`;
     wrapper.innerHTML = `
       <article class="media-card">

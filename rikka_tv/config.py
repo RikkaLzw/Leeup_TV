@@ -57,6 +57,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "skip_outro_enabled": False,
         "skip_outro_seconds": 0,
     },
+    "douban": {
+        "base_url": "https://m.douban.com",
+        "timeout_seconds": 10,
+        "image_proxy_type": "cmliussss-cdn-ali",
+        "image_proxy_url": "",
+    },
     "api_site": {},
 }
 

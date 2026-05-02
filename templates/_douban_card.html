@@ -1,9 +1,9 @@
 <article class="media-card">
   {% set detail_href = url_for('resolve') ~ '?title=' ~ (item.title|urlencode) ~ '&year=' ~ (item.year|urlencode) ~ '&douban_id=' ~ (item.id|urlencode) ~ '&kind=' ~ (item.kind|urlencode) ~ '&poster=' ~ (item.poster|urlencode) ~ '&raw_poster=' ~ (item.raw_poster|urlencode) ~ '&rate=' ~ (item.rate|urlencode) ~ '&subtitle=' ~ (item.subtitle|urlencode) %}
-  {% set display_poster = item.raw_poster or item.poster %}
+  {% set display_poster = (item.raw_poster or item.poster)|poster_src %}
   <a class="poster" href="{{ detail_href }}">
     {% if display_poster %}
-      <img src="{{ display_poster }}" alt="{{ item.title }}" loading="lazy" referrerpolicy="no-referrer" data-raw-poster="{{ item.raw_poster or '' }}" data-proxy-poster="{{ item.poster if item.raw_poster else '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryDouban(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
+      <img src="{{ display_poster }}" alt="{{ item.title }}" loading="lazy" referrerpolicy="no-referrer" data-raw-poster="{{ (item.raw_poster or '')|direct_poster }}" data-proxy-poster="{{ (item.poster if item.raw_poster else '')|direct_poster }}" onerror="window.RikkaImages ? window.RikkaImages.retryDouban(this) : (this.remove(), this.parentElement.classList.add('poster-missing'));">
       <span class="poster-fallback">{{ item.title[:4] }}</span>
     {% else %}
       <span class="poster-fallback">{{ item.title[:4] }}</span>

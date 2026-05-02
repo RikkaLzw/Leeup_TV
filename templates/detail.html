@@ -5,9 +5,9 @@
 {% block content %}
   <section class="detail-layout">
     <div class="poster-frame">
-      {% set display_poster = item.raw_poster or item.poster %}
+      {% set display_poster = (item.raw_poster or item.poster)|poster_src %}
       {% if display_poster %}
-        <img src="{{ display_poster }}" alt="{{ item.title }}" data-raw-poster="{{ item.raw_poster or '' }}" data-proxy-poster="{{ item.poster if item.raw_poster else '' }}" data-source-poster="{{ item.source_poster or '' }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.innerHTML = '<div class=&quot;poster-placeholder&quot;>{{ item.title[:1] }}</div>');">
+        <img src="{{ display_poster }}" alt="{{ item.title }}" referrerpolicy="no-referrer" data-raw-poster="{{ (item.raw_poster or '')|direct_poster }}" data-proxy-poster="{{ (item.poster if item.raw_poster else '')|direct_poster }}" data-source-poster="{{ (item.source_poster or '')|direct_poster }}" onerror="window.RikkaImages ? window.RikkaImages.retryPoster(this) : (this.remove(), this.parentElement.innerHTML = '<div class=&quot;poster-placeholder&quot;>{{ item.title[:1] }}</div>');">
       {% else %}
         <div class="poster-placeholder">{{ item.title[:1] }}</div>
       {% endif %}

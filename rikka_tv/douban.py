@@ -209,7 +209,9 @@ def _pick_suggest_poster(items: list[dict[str, Any]], title: str, year: str = ""
             candidates.append((distance, year_penalty, item, poster))
     if not candidates:
         return {}
-    _distance, _year_penalty, item, poster = sorted(candidates, key=lambda value: (value[0], value[1]))[0]
+    distance, year_penalty, item, poster = sorted(candidates, key=lambda value: (value[0], value[1]))[0]
+    if distance > 1 or (year and year_penalty):
+        return {}
     return {
         "poster": _proxy_poster(poster),
         "raw_poster": poster,
@@ -238,7 +240,9 @@ def _pick_rexxar_poster(items: list[dict[str, Any]], title: str, year: str = "")
             candidates.append((distance, year_penalty, target, poster))
     if not candidates:
         return {}
-    _distance, _year_penalty, target, poster = sorted(candidates, key=lambda value: (value[0], value[1]))[0]
+    distance, year_penalty, target, poster = sorted(candidates, key=lambda value: (value[0], value[1]))[0]
+    if distance > 1 or (year and year_penalty):
+        return {}
     return {
         "poster": _proxy_poster(poster),
         "raw_poster": poster,
@@ -253,8 +257,4 @@ def _normalize_title(value: str) -> str:
 
 
 def _proxy_poster(url: str) -> str:
-    if not url:
-        return ""
-    if "doubanio.com" not in url:
-        return url
-    return f"/image/douban?url={quote(url, safe='')}"
+    return url or ""

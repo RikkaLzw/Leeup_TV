@@ -87,7 +87,9 @@
     const episode = Number(record.episode_index || 0);
     const href = `/play/${encodeURIComponent(record.source)}/${encodeURIComponent(record.id)}?episode=${episode}&prefer=1`;
     const cover = record.cover || record.poster || "";
-    const displayCover = record.raw_poster || cover;
+    const displayCover = window.RikkaImages
+      ? window.RikkaImages.posterSrc(record.raw_poster || cover)
+      : (record.raw_poster || cover);
     const percent = formatPercent(record);
     const article = document.createElement("article");
     article.className = "media-card local-continue-card";
@@ -133,7 +135,9 @@
   function updateExistingCard(key, record) {
     const node = grid.querySelector(`[data-continue-key="${cssEscape(key)}"]`);
     const cover = record.cover || record.poster || "";
-    const displayCover = record.raw_poster || cover;
+    const displayCover = window.RikkaImages
+      ? window.RikkaImages.posterSrc(record.raw_poster || cover)
+      : (record.raw_poster || cover);
     if (!node || !displayCover) return;
     const image = node.querySelector(".poster img");
     if (image) {

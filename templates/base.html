@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ site.name or "LeeupTV" }}{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}?v={{ asset_version }}">
+    <script>window.RIKKA_IMAGE_CONFIG = {{ image_config|default({})|tojson }};</script>
     <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
     {% block head %}{% endblock %}
   </head>

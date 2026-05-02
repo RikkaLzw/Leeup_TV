@@ -40,7 +40,9 @@
   },
   "douban": {
     "base_url": "https://m.douban.com",
-    "timeout_seconds": 10
+    "timeout_seconds": 10,
+    "image_proxy_type": "cmliussss-cdn-ali",
+    "image_proxy_url": ""
   },
   "recommendations": {
     "cache_seconds": 1800,
