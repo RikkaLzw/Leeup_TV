@@ -25,16 +25,9 @@
   const episodeList = document.getElementById("episodeList");
   const episodeCount = document.getElementById("episodeCount");
   const speedTestButton = document.getElementById("speedTestButton");
-  const skipIntroButton = document.getElementById("skipIntroButton");
-  const skipOutroButton = document.getElementById("skipOutroButton");
-  const skipIntroInlineButton = document.getElementById("skipIntroInlineButton");
-  const skipOutroInlineButton = document.getElementById("skipOutroInlineButton");
-  const playbackRateSelect = document.getElementById("playbackRateSelect");
-  const pipButton = document.getElementById("pipButton");
-  const webFullscreenButton = document.getElementById("webFullscreenButton");
-  const nativeFullscreenButton = document.getElementById("nativeFullscreenButton");
-  const qualityBadge = document.getElementById("qualityBadge");
-  const qualityBadgeInline = document.getElementById("qualityBadgeInline");
+  let qualityLabel = null;
+  let skipIntroControl = null;
+  let skipOutroControl = null;
   const mobileTabs = Array.from(document.querySelectorAll("[data-mobile-panel]"));
   const preferPanel = document.querySelector(".prefer-panel");
   const episodePanel = document.querySelector(".episode-panel");
@@ -69,6 +62,7 @@
         autoSize: false,
         autoPlayback: false,
         playsInline: true,
+        controls: playerControls(),
         moreVideoAttr: {
           controls: false,
           preload: "auto",
@@ -366,6 +360,52 @@
     player.play().catch(() => {});
   }
 
+  function playerControls() {
+    const controls = [
+      {
+        name: "qualityLabel",
+        position: "right",
+        index: 24,
+        html: '<span class="player-art-quality">清晰度 未知</span>',
+        tooltip: "清晰度",
+        mounted(element) {
+          qualityLabel = element.querySelector(".player-art-quality") || element;
+        }
+      }
+    ];
+    if (Math.max(Number(cfg.playerOptions?.skipIntroSeconds || 0), 0)) {
+      controls.push({
+        name: "skipIntro",
+        position: "right",
+        index: 25,
+        html: '<button class="player-art-action" type="button">跳片头</button>',
+        tooltip: "跳过片头",
+        mounted(element) {
+          skipIntroControl = element;
+        },
+        click() {
+          skipIntro();
+        }
+      });
+    }
+    if (Math.max(Number(cfg.playerOptions?.skipOutroSeconds || 0), 0)) {
+      controls.push({
+        name: "skipOutro",
+        position: "right",
+        index: 26,
+        html: '<button class="player-art-action" type="button">跳片尾</button>',
+        tooltip: "跳过片尾",
+        mounted(element) {
+          skipOutroControl = element;
+        },
+        click() {
+          skipOutro();
+        }
+      });
+    }
+    return controls;
+  }
+
   function skipIntro() {
     const seconds = Math.max(Number(cfg.playerOptions?.skipIntroSeconds || 0), 0);
     if (!seconds) return;
@@ -391,16 +431,12 @@
   function updateSkipButtons() {
     const introSeconds = Math.max(Number(cfg.playerOptions?.skipIntroSeconds || 0), 0);
     const outroSeconds = Math.max(Number(cfg.playerOptions?.skipOutroSeconds || 0), 0);
-    if (skipIntroButton) skipIntroButton.hidden = !introSeconds;
-    if (skipOutroButton) skipOutroButton.hidden = !outroSeconds;
-    if (skipIntroInlineButton) skipIntroInlineButton.hidden = !introSeconds;
-    if (skipOutroInlineButton) skipOutroInlineButton.hidden = !outroSeconds;
+    if (skipIntroControl) skipIntroControl.hidden = !introSeconds;
+    if (skipOutroControl) skipOutroControl.hidden = !outroSeconds;
   }
 
   function setQualityBadge(label) {
-    const text = `清晰度 ${label || "未知"}`;
-    if (qualityBadge) qualityBadge.textContent = text;
-    if (qualityBadgeInline) qualityBadgeInline.textContent = text;
+    if (qualityLabel) qualityLabel.textContent = label || "未知";
   }
 
   function updateQualityFromVideo() {
@@ -489,7 +525,7 @@
   function isPlayerControlTarget(target) {
     if (!(target instanceof Element)) return false;
     return Boolean(target.closest(
-      ".art-bottom, .art-controls, .art-progress, .art-settings, .art-contextmenus, .player-quick-controls, .player-mobile-actions"
+      ".art-bottom, .art-controls, .art-progress, .art-settings, .art-contextmenus, .player-mobile-actions"
     ));
   }
 
@@ -498,68 +534,6 @@
     const target = event.target;
     if (target instanceof Element && (target.closest("#playerSheet") || target.closest("[data-player-sheet]"))) return;
     closePlayerSheet();
-  }
-
-  function setPlaybackRate(rate) {
-    const nextRate = Number(rate || 1);
-    player.playbackRate = nextRate;
-    if (playbackRateSelect && playbackRateSelect.value !== String(nextRate)) {
-      playbackRateSelect.value = String(nextRate);
-    }
-    showPlayerNotice(`${nextRate}x`);
-  }
-
-  async function togglePictureInPicture() {
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-        return;
-      }
-      if (art?.pip) {
-        art.pip = true;
-        return;
-      }
-      if (player.requestPictureInPicture) {
-        await player.requestPictureInPicture();
-      } else {
-        showPlayerNotice("当前浏览器不支持画中画");
-      }
-    } catch {
-      showPlayerNotice("画中画启动失败");
-    }
-  }
-
-  async function toggleWebFullscreen() {
-    try {
-      if (art) {
-        art.fullscreenWeb = !art.fullscreenWeb;
-        return;
-      }
-      await toggleElementFullscreen(playerContainer);
-    } catch {
-      showPlayerNotice("网页全屏启动失败");
-    }
-  }
-
-  async function toggleNativeFullscreen() {
-    try {
-      if (art) {
-        art.fullscreen = !art.fullscreen;
-        return;
-      }
-      await toggleElementFullscreen(playerContainer);
-    } catch {
-      showPlayerNotice("全屏启动失败");
-    }
-  }
-
-  async function toggleElementFullscreen(element) {
-    if (!element) return;
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-    } else if (element.requestFullscreen) {
-      await element.requestFullscreen();
-    }
   }
 
   async function runPreference() {
@@ -989,14 +963,6 @@
     return 0;
   }
 
-  skipIntroButton?.addEventListener("click", skipIntro);
-  skipOutroButton?.addEventListener("click", skipOutro);
-  skipIntroInlineButton?.addEventListener("click", skipIntro);
-  skipOutroInlineButton?.addEventListener("click", skipOutro);
-  playbackRateSelect?.addEventListener("change", () => setPlaybackRate(playbackRateSelect.value));
-  pipButton?.addEventListener("click", togglePictureInPicture);
-  webFullscreenButton?.addEventListener("click", toggleWebFullscreen);
-  nativeFullscreenButton?.addEventListener("click", toggleNativeFullscreen);
   speedTestButton?.addEventListener("click", runPreference);
   mobileTabs.forEach((tab) => {
     tab.addEventListener("click", () => setMobilePanel(tab.dataset.mobilePanel || "episodes"));
@@ -1019,9 +985,6 @@
   player?.addEventListener("loadedmetadata", () => {
     updateQualityFromVideo();
     updateSkipButtons();
-  });
-  player?.addEventListener("ratechange", () => {
-    if (playbackRateSelect) playbackRateSelect.value = String(player.playbackRate || 1);
   });
   player?.addEventListener("playing", () => {
     clearLoadTimer();
