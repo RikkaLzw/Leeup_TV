@@ -769,17 +769,18 @@
 
   async function saveProgress() {
     if (!player.duration || player.currentTime < 1) return;
+    const poster = pickRecordPoster();
     const record = {
       source: currentSource,
       id: currentId,
       title: detail.title,
       source_name: detail.source_name,
       year: detail.year,
-      cover: detail.poster || cfg.detail?.poster || cfg.originalDetail?.poster || "",
-      poster: detail.poster || cfg.detail?.poster || cfg.originalDetail?.poster || "",
-      raw_poster: detail.raw_poster || cfg.detail?.raw_poster || cfg.originalDetail?.raw_poster || "",
-      source_poster: detail.source_poster || cfg.detail?.source_poster || cfg.originalDetail?.source_poster || "",
-      poster_source: detail.poster_source || cfg.detail?.poster_source || cfg.originalDetail?.poster_source || "",
+      cover: poster.poster,
+      poster: poster.poster,
+      raw_poster: poster.raw_poster,
+      source_poster: poster.source_poster,
+      poster_source: poster.poster_source,
       episode_index: currentEpisode,
       total_episodes: detail.episodes.length,
       play_time: Math.floor(player.currentTime),
@@ -788,6 +789,25 @@
       save_time: Date.now()
     };
     saveLocalProgress(record);
+  }
+
+  function pickRecordPoster() {
+    const items = [cfg.originalDetail, cfg.detail, detail].filter(Boolean);
+    const doubanItem = items.find((item) => (
+      item.raw_poster ||
+      item.poster_source === "douban" ||
+      String(item.poster || item.cover || "").includes("doubanio.com")
+    ));
+    const posterItem = doubanItem || items.find((item) => item.poster || item.cover) || {};
+    const sourcePoster = posterItem.source_poster || items.map((item) => item.source_poster || "").find(Boolean) || "";
+    const poster = posterItem.poster || posterItem.cover || sourcePoster || "";
+    const rawPoster = posterItem.raw_poster || "";
+    return {
+      poster,
+      raw_poster: rawPoster,
+      source_poster: sourcePoster,
+      poster_source: posterItem.poster_source || (rawPoster || poster.includes("doubanio.com") ? "douban" : "")
+    };
   }
 
   function saveLocalProgress(record) {

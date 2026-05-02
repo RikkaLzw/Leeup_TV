@@ -130,6 +130,36 @@
     if (grid.children.length > 0 || added > 0) {
       section.hidden = false;
     }
+    repairMissingCovers(records);
+  }
+
+  async function repairMissingCovers(records) {
+    const missing = records
+      .filter((record) => record && record.source && record.id && !(record.cover || record.poster || record.raw_poster))
+      .slice(0, 8);
+    if (!missing.length) return;
+
+    let changed = false;
+    for (const record of missing) {
+      try {
+        const res = await fetch(`/api/detail?source=${encodeURIComponent(record.source)}&id=${encodeURIComponent(record.id)}`);
+        if (!res.ok) continue;
+        const detail = await res.json();
+        const poster = detail.poster || detail.cover || "";
+        if (!poster && !detail.raw_poster) continue;
+        record.cover = poster || detail.raw_poster || "";
+        record.poster = poster || detail.raw_poster || "";
+        record.raw_poster = detail.raw_poster || record.raw_poster || "";
+        record.source_poster = detail.source_poster || record.source_poster || "";
+        record.poster_source = detail.poster_source || record.poster_source || "";
+        changed = true;
+      } catch {
+        // Keep stale records as-is; they will be retried on the next homepage visit.
+      }
+    }
+    if (!changed) return;
+    writeRecords(mergeRecords(records));
+    renderLocalRecords();
   }
 
   function updateExistingCard(key, record) {
