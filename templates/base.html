@@ -74,6 +74,7 @@
               <strong>{{ app_status.skip_label }}</strong>
             </div>
           </div>
+          <button class="settings-about-button" id="aboutDialogOpen" type="button">关于</button>
         </section>
       </div>
     </header>
@@ -113,6 +114,22 @@
       {% endif %}
       {% block content %}{% endblock %}
     </main>
+
+    <div class="about-modal" id="aboutDialog" hidden>
+      <div class="about-backdrop" data-about-close></div>
+      <section class="about-dialog" role="dialog" aria-modal="true" aria-labelledby="aboutDialogTitle">
+        <div class="notice-dialog-header">
+          <h2 id="aboutDialogTitle">关于 {{ site.name or "LeeupTV" }}</h2>
+          <button class="icon-button" type="button" data-about-close aria-label="关闭">×</button>
+        </div>
+        <div class="about-dialog-body">
+          <p>希望大家在使用过程中积极反馈 Bug。</p>
+          <p>如果有更好的建议、片源体验问题或功能想法，也欢迎加入 QQ 群一起反馈。</p>
+          <p>图片和视频的加载速度取决于自身网络状况以及 CDN 线路质量。</p>
+        </div>
+        <a class="primary-button" href="{{ site.qq_group_url }}" target="_blank" rel="noopener noreferrer">加入 QQ 群</a>
+      </section>
+    </div>
 
     {% if is_home %}
       <button class="notice-fab" id="siteNoticeOpen" type="button">公告</button>

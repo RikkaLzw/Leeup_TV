@@ -262,6 +262,21 @@ input::placeholder {
   border-bottom: 1px solid rgba(235, 246, 255, 0.08);
 }
 
+.settings-about-button {
+  min-height: 34px;
+  color: var(--accent-strong);
+  background: rgba(138, 219, 210, 0.105);
+  border: 1px solid rgba(138, 219, 210, 0.3);
+  border-radius: 8px;
+  box-shadow: var(--inner-glow);
+  cursor: pointer;
+  font-weight: 760;
+}
+
+.settings-about-button:hover {
+  background: rgba(138, 219, 210, 0.16);
+}
+
 .mobile-bottom-search {
   display: none;
 }
@@ -795,11 +810,13 @@ input::placeholder {
     linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(138, 219, 210, 0.34));
 }
 
-.notice-modal[hidden] {
+.notice-modal[hidden],
+.about-modal[hidden] {
   display: none;
 }
 
-.notice-modal {
+.notice-modal,
+.about-modal {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -808,7 +825,8 @@ input::placeholder {
   padding: 20px;
 }
 
-.notice-backdrop {
+.notice-backdrop,
+.about-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(3, 5, 9, 0.62);
@@ -816,7 +834,8 @@ input::placeholder {
   -webkit-backdrop-filter: blur(12px);
 }
 
-.notice-dialog {
+.notice-dialog,
+.about-dialog {
   position: relative;
   display: grid;
   gap: 16px;
@@ -852,6 +871,17 @@ input::placeholder {
 
 .notice-dialog-body p {
   margin: 5px 0 0;
+}
+
+.about-dialog-body {
+  display: grid;
+  gap: 10px;
+  color: var(--muted-strong);
+  line-height: 1.75;
+}
+
+.about-dialog-body p {
+  margin: 0;
 }
 
 .icon-button {
@@ -1249,11 +1279,48 @@ code {
     position: fixed;
     top: calc(64px + env(safe-area-inset-top));
     right: 10px;
-    left: 10px;
-    width: auto;
-    max-height: calc(100dvh - 156px - env(safe-area-inset-bottom));
+    left: auto;
+    width: min(292px, calc(100vw - 20px));
+    max-height: calc(100dvh - 188px - env(safe-area-inset-bottom));
+    gap: 8px;
+    padding: 10px;
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+
+  .settings-menu-header strong {
+    font-size: 14px;
+  }
+
+  .settings-menu-header span,
+  .settings-stat span,
+  .settings-row span,
+  .settings-note {
+    font-size: 11px;
+  }
+
+  .settings-stat-grid {
+    gap: 5px;
+  }
+
+  .settings-stat {
+    padding: 8px 9px;
+  }
+
+  .settings-stat strong {
+    font-size: 18px;
+  }
+
+  .settings-list {
+    gap: 6px;
+  }
+
+  .settings-row {
+    gap: 8px;
+  }
+
+  .settings-row strong {
+    font-size: 11px;
   }
 
   .top-search {
