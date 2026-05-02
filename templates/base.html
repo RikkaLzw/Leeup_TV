@@ -19,6 +19,63 @@
         <input type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
         <button type="submit">搜索</button>
       </form>
+      <div class="top-actions">
+        <button class="settings-toggle" id="settingsMenuToggle" type="button" aria-label="打开设置" aria-controls="settingsMenu" aria-expanded="false">
+          <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/>
+            <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.1 2.1 0 0 1-2.98 2.98l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.66V21a2.1 2.1 0 0 1-4.2 0v-.06A1.8 1.8 0 0 0 8.4 19.3a1.8 1.8 0 0 0-1.98.36l-.04.04a2.1 2.1 0 1 1-2.98-2.98l.04-.04A1.8 1.8 0 0 0 3.8 14.7a1.8 1.8 0 0 0-1.66-1.1H2.1a2.1 2.1 0 0 1 0-4.2h.06A1.8 1.8 0 0 0 3.8 8.3a1.8 1.8 0 0 0-.36-1.98l-.04-.04A2.1 2.1 0 1 1 6.38 3.3l.04.04a1.8 1.8 0 0 0 1.98.36 1.8 1.8 0 0 0 1.1-1.66V2a2.1 2.1 0 0 1 4.2 0v.06a1.8 1.8 0 0 0 1.1 1.66 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.1 2.1 0 0 1 2.98 2.98l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.66 1.1h.06a2.1 2.1 0 0 1 0 4.2h-.06A1.8 1.8 0 0 0 19.4 15Z"/>
+          </svg>
+        </button>
+        <section class="settings-menu" id="settingsMenu" aria-label="站点设置" hidden>
+          <div class="settings-menu-header">
+            <div>
+              <strong>站点状态</strong>
+              <span>运行与加速信息</span>
+            </div>
+          </div>
+          <div class="settings-stat-grid">
+            <div class="settings-stat">
+              <span>今日用户</span>
+              <strong>{{ app_status.today_users }}</strong>
+            </div>
+            <div class="settings-stat">
+              <span>总用户</span>
+              <strong>{{ app_status.total_users }}</strong>
+            </div>
+          </div>
+          <div class="settings-list">
+            <div class="settings-row">
+              <span>视频源</span>
+              <strong>{{ app_status.source_count }} 个</strong>
+            </div>
+            <div class="settings-row">
+              <span>图片线路</span>
+              <strong>{{ app_status.image_proxy_label }}</strong>
+            </div>
+            <div class="settings-note">{{ app_status.image_proxy_detail }}</div>
+            <div class="settings-row">
+              <span>播放优选</span>
+              <strong>{{ app_status.prefer_label }}</strong>
+            </div>
+            <div class="settings-row">
+              <span>测速</span>
+              <strong>{{ app_status.speed_test_label }} · {{ app_status.browser_concurrency }} 并发</strong>
+            </div>
+            <div class="settings-row">
+              <span>搜索策略</span>
+              <strong>{{ app_status.search_label }}</strong>
+            </div>
+            <div class="settings-row">
+              <span>推荐缓存</span>
+              <strong>{{ app_status.recommend_cache_label }}</strong>
+            </div>
+            <div class="settings-row">
+              <span>跳过片头片尾</span>
+              <strong>{{ app_status.skip_label }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
     </header>
 
     <div class="mobile-search-panel" id="mobileSearchPanel" hidden>
@@ -81,6 +138,7 @@
       </div>
       <script src="{{ url_for('static', path='/js/notice.js') }}?v={{ asset_version }}"></script>
     {% endif %}
+    <script src="{{ url_for('static', path='/js/settings_menu.js') }}?v={{ asset_version }}"></script>
     <script src="{{ url_for('static', path='/js/mobile_nav.js') }}?v={{ asset_version }}"></script>
   </body>
 </html>

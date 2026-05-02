@@ -1,6 +1,4 @@
 (function () {
-  const imageConfig = window.RIKKA_IMAGE_CONFIG || {};
-
   function doubanProxy(url) {
     const direct = directImageUrl(url);
     return direct ? `/image/douban?url=${encodeURIComponent(direct)}` : "";
@@ -51,25 +49,7 @@
     if (!/^img\d+\.doubanio\.com$/i.test(parsed.hostname)) {
       return direct;
     }
-    const proxyType = imageConfig.doubanImageProxyType || "cmliussss-cdn-ali";
-    const proxyUrl = imageConfig.doubanImageProxyUrl || "";
-    if (proxyType === "server") return doubanProxy(direct);
-    if (proxyType === "img3") {
-      parsed.hostname = "img3.doubanio.com";
-      return parsed.toString();
-    }
-    if (proxyType === "cmliussss-cdn-tencent") {
-      parsed.hostname = "img.doubanio.cmliussss.net";
-      return parsed.toString();
-    }
-    if (proxyType === "cmliussss-cdn-ali") {
-      parsed.hostname = "img.doubanio.cmliussss.com";
-      return parsed.toString();
-    }
-    if (proxyType === "custom" && proxyUrl) {
-      return `${proxyUrl}${encodeURIComponent(direct)}`;
-    }
-    return direct;
+    return doubanProxy(direct);
   }
 
   function doubanHostCandidates(url) {

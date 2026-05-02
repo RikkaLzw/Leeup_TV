@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
+from datetime import date
 from os import PathLike
 from typing import Any
 from urllib.parse import parse_qs
@@ -27,6 +29,7 @@ from .db import (
     get_source_metrics,
     get_source_metrics_map,
     init_db,
+    record_visitor,
     save_play_resolution_cache,
     save_source_resolution_cache,
     save_source_test_metrics,
@@ -62,17 +65,10 @@ def _poster_display_url(value: Any, cfg: dict[str, Any] | None = None) -> str:
         return url
     douban_cfg = (cfg or load_config()).get("douban") or {}
     proxy_type = str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali")
-    proxy_url = str(douban_cfg.get("image_proxy_url") or "")
-    if proxy_type == "server":
+    if proxy_type == "server" or proxy_type == "custom" or "cdn" in proxy_type:
         return f"/image/douban?url={quote(url, safe='')}"
     if proxy_type == "img3":
         return _replace_douban_image_host(url, "img3.doubanio.com")
-    if proxy_type == "cmliussss-cdn-tencent":
-        return _replace_douban_image_host(url, "img.doubanio.cmliussss.net")
-    if proxy_type == "cmliussss-cdn-ali":
-        return _replace_douban_image_host(url, "img.doubanio.cmliussss.com")
-    if proxy_type == "custom" and proxy_url:
-        return f"{proxy_url}{quote(url, safe='')}"
     return url
 
 
@@ -451,7 +447,7 @@ def create_app() -> FastAPI:
         image_url = unquote(url)
         if not image_url.startswith(("https://", "http://")) or "doubanio.com" not in image_url:
             raise HTTPException(status_code=400)
-        candidates = _douban_image_candidates(image_url)
+        candidates = _douban_image_candidates(image_url, load_config())
         try:
             upstream = _fetch_first_image(candidates)
         except Exception:
@@ -571,6 +567,7 @@ def _search_scope_meta(cfg: dict[str, Any], scope: str, selected_sources: list[s
 def _template(request: Request, name: str, **context: Any) -> HTMLResponse:
     cfg = load_config()
     client = MacCMSClient(cfg)
+    visitor_stats = _record_request_visitor(request)
     base = {
         "request": request,
         "site": cfg.get("site", {}),
@@ -581,12 +578,21 @@ def _template(request: Request, name: str, **context: Any) -> HTMLResponse:
         "is_home": request.url.path == "/",
         "asset_version": _asset_version(),
         "image_config": _image_runtime_config(cfg),
+        "app_status": _app_status_summary(cfg, client, visitor_stats),
         "mobile_nav_items": _mobile_nav_items(),
         "show_mobile_nav": False,
         "active_mobile_level": "",
     }
     base.update(context)
     return templates.TemplateResponse(request, name, base)
+
+
+def _record_request_visitor(request: Request) -> dict[str, int]:
+    visitor_id = str(request.session.get("visitor_id") or "").strip()
+    if not visitor_id:
+        visitor_id = uuid.uuid4().hex
+        request.session["visitor_id"] = visitor_id
+    return record_visitor(visitor_id, date.today().isoformat())
 
 
 def _asset_version() -> str:
@@ -602,9 +608,85 @@ def _asset_version() -> str:
 def _image_runtime_config(cfg: dict[str, Any]) -> dict[str, str]:
     douban_cfg = cfg.get("douban") or {}
     return {
-        "doubanImageProxyType": str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali"),
-        "doubanImageProxyUrl": str(douban_cfg.get("image_proxy_url") or ""),
+        "doubanImageProxyMode": _image_proxy_label(douban_cfg),
     }
+
+
+def _app_status_summary(
+    cfg: dict[str, Any],
+    client: MacCMSClient,
+    visitor_stats: dict[str, int],
+) -> dict[str, str | int | bool]:
+    speed_cfg = cfg.get("speed_test") or {}
+    player_cfg = cfg.get("player") or {}
+    recommend_cfg = cfg.get("recommendations") or {}
+    douban_cfg = cfg.get("douban") or {}
+    source_count = len(client.available_sources())
+    prefer_enabled = bool(speed_cfg.get("enabled", True) and speed_cfg.get("prefer_by_default", True))
+    speed_enabled = bool(speed_cfg.get("enabled", True))
+    skip_intro_enabled = bool(player_cfg.get("skip_intro_enabled"))
+    skip_outro_enabled = bool(player_cfg.get("skip_outro_enabled"))
+    preferred_limit = _preferred_search_source_limit(cfg)
+    return {
+        "source_count": source_count,
+        "today_users": int(visitor_stats.get("today_users") or 0),
+        "total_users": int(visitor_stats.get("total_users") or 0),
+        "image_proxy_label": _image_proxy_label(douban_cfg),
+        "image_proxy_detail": _image_proxy_detail(douban_cfg),
+        "cdn_redacted": _image_proxy_uses_hidden_cdn(douban_cfg),
+        "speed_test_label": "已启用" if speed_enabled else "未启用",
+        "prefer_label": "默认优选" if prefer_enabled else "手动选择",
+        "browser_concurrency": int(speed_cfg.get("browser_concurrency") or 4),
+        "search_label": f"优先 {preferred_limit} 个快速源" if speed_enabled else "全源搜索",
+        "recommend_cache_label": _duration_label(int(recommend_cfg.get("cache_seconds") or 1800)),
+        "skip_label": _skip_label(player_cfg, skip_intro_enabled, skip_outro_enabled),
+    }
+
+
+def _image_proxy_label(douban_cfg: dict[str, Any]) -> str:
+    proxy_type = str(douban_cfg.get("image_proxy_type") or "").strip().lower()
+    if not proxy_type:
+        return "直连图片"
+    if proxy_type == "server":
+        return "站内代理"
+    if proxy_type == "img3":
+        return "备用域名"
+    if proxy_type == "custom" or "cdn" in proxy_type:
+        return "CDN 加速"
+    return "图片加速"
+
+
+def _image_proxy_detail(douban_cfg: dict[str, Any]) -> str:
+    proxy_type = str(douban_cfg.get("image_proxy_type") or "").strip().lower()
+    if proxy_type == "server":
+        return "经本站转发，隐藏上游地址"
+    if proxy_type == "custom" or "cdn" in proxy_type:
+        return "具体服务商与线路已隐藏"
+    if proxy_type == "img3":
+        return "使用公共备用图片域名"
+    return "未启用外部加速"
+
+
+def _image_proxy_uses_hidden_cdn(douban_cfg: dict[str, Any]) -> bool:
+    proxy_type = str(douban_cfg.get("image_proxy_type") or "").strip().lower()
+    return proxy_type == "custom" or "cdn" in proxy_type
+
+
+def _duration_label(seconds: int) -> str:
+    if seconds >= 3600 and seconds % 3600 == 0:
+        return f"{seconds // 3600} 小时"
+    if seconds >= 60:
+        return f"{seconds // 60} 分钟"
+    return f"{seconds} 秒"
+
+
+def _skip_label(player_cfg: dict[str, Any], intro_enabled: bool, outro_enabled: bool) -> str:
+    parts: list[str] = []
+    if intro_enabled:
+        parts.append(f"片头 {int(player_cfg.get('skip_intro_seconds') or 0)} 秒")
+    if outro_enabled:
+        parts.append(f"片尾 {int(player_cfg.get('skip_outro_seconds') or 0)} 秒")
+    return " / ".join(parts) if parts else "未启用"
 
 
 def _mobile_nav_items() -> list[dict[str, str]]:
@@ -972,7 +1054,7 @@ def _fetch_first_image(urls: list[str]) -> requests.Response:
     raise last_error or RuntimeError("image fetch failed")
 
 
-def _douban_image_candidates(url: str) -> list[str]:
+def _douban_image_candidates(url: str, cfg: dict[str, Any] | None = None) -> list[str]:
     parsed = urlparse(url)
     hosts = []
     if parsed.netloc:
@@ -980,6 +1062,10 @@ def _douban_image_candidates(url: str) -> list[str]:
     hosts.extend([f"img{index}.doubanio.com" for index in range(1, 10)])
     seen: set[str] = set()
     candidates: list[str] = []
+    configured = _configured_douban_image_candidate(url, cfg or load_config())
+    if configured:
+        seen.add(configured)
+        candidates.append(configured)
     for host in hosts:
         if "doubanio.com" not in host:
             continue
@@ -989,6 +1075,21 @@ def _douban_image_candidates(url: str) -> list[str]:
         seen.add(candidate)
         candidates.append(candidate)
     return candidates
+
+
+def _configured_douban_image_candidate(url: str, cfg: dict[str, Any]) -> str:
+    douban_cfg = cfg.get("douban") or {}
+    proxy_type = str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali").strip().lower()
+    proxy_url = str(douban_cfg.get("image_proxy_url") or "").strip()
+    if proxy_type == "cmliussss-cdn-tencent":
+        return _replace_douban_image_host(url, "img.doubanio.cmliussss.net")
+    if proxy_type == "cmliussss-cdn-ali":
+        return _replace_douban_image_host(url, "img.doubanio.cmliussss.com")
+    if proxy_type == "img3":
+        return _replace_douban_image_host(url, "img3.doubanio.com")
+    if proxy_type == "custom" and proxy_url:
+        return f"{proxy_url}{quote(url, safe='')}"
+    return ""
 
 
 def prefer_douban_posters(items: list[dict[str, Any]], cfg: dict[str, Any]) -> list[dict[str, Any]]:

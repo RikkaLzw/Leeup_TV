@@ -72,6 +72,14 @@ def init_db(config: dict[str, Any]) -> None:
               payload TEXT NOT NULL,
               updated_at INTEGER NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS visitor_stats (
+              visitor_id TEXT PRIMARY KEY,
+              first_seen_at INTEGER NOT NULL,
+              last_seen_at INTEGER NOT NULL,
+              first_seen_date TEXT NOT NULL,
+              last_seen_date TEXT NOT NULL
+            );
             """
         )
 
@@ -178,6 +186,42 @@ def get_source_metrics(limit: int = 50) -> list[dict[str, Any]]:
             (int(limit or 50),),
         ).fetchall()
     return sorted((_row_to_source_metric(row) for row in rows), key=lambda item: item["source_score"], reverse=True)
+
+
+def record_visitor(visitor_id: str, today: str) -> dict[str, int]:
+    visitor_id = str(visitor_id or "").strip()
+    today = str(today or "").strip()
+    if not visitor_id or not today:
+        return get_visitor_stats(today)
+    now = int(time.time())
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO visitor_stats (visitor_id, first_seen_at, last_seen_at, first_seen_date, last_seen_date)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(visitor_id) DO UPDATE SET
+              last_seen_at = excluded.last_seen_at,
+              last_seen_date = excluded.last_seen_date
+            """,
+            (visitor_id, now, now, today, today),
+        )
+        today_count = db.execute(
+            "SELECT COUNT(*) FROM visitor_stats WHERE last_seen_date = ?",
+            (today,),
+        ).fetchone()[0]
+        total_count = db.execute("SELECT COUNT(*) FROM visitor_stats").fetchone()[0]
+    return {"today_users": int(today_count or 0), "total_users": int(total_count or 0)}
+
+
+def get_visitor_stats(today: str) -> dict[str, int]:
+    today = str(today or "").strip()
+    with connect() as db:
+        today_count = db.execute(
+            "SELECT COUNT(*) FROM visitor_stats WHERE last_seen_date = ?",
+            (today,),
+        ).fetchone()[0] if today else 0
+        total_count = db.execute("SELECT COUNT(*) FROM visitor_stats").fetchone()[0]
+    return {"today_users": int(today_count or 0), "total_users": int(total_count or 0)}
 
 
 def get_play_resolution_cache(cache_key: str, max_age_seconds: int) -> dict[str, Any] | None:
