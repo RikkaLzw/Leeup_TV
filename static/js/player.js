@@ -1149,15 +1149,19 @@
   }
 
   function browserMeasureStream(url) {
-    if (!url) return Promise.resolve(failTest());
-    if (/\.m3u8(\?|$)/i.test(url) && window.Hls && Hls.isSupported()) {
-      return measureHlsStream(url);
-    }
-    return measureNativeStream(url);
+    const value = String(url || "").trim();
+    if (!value) return Promise.resolve(failTest("empty_url"));
+    if (isHlsUrl(value)) return measureHlsStream(value);
+    return measureNativeStream(value);
   }
 
   function measureHlsStream(url) {
+    const playbackUrl = playbackHlsUrl(url);
+    if (!window.Hls || !Hls.isSupported()) {
+      return measureMediaElementPlayback(playbackUrl, "browser_hls_native");
+    }
     return new Promise((resolve) => {
+      const started = performance.now();
       const video = document.createElement("video");
       video.muted = true;
       video.preload = "auto";
@@ -1171,35 +1175,77 @@
       let manifestWidth = 0;
       let manifestHeight = 0;
       let resolved = false;
+      let manifestReady = false;
       let metadataReady = false;
-      let speedReady = false;
       let probeStartedAt = 0;
       let probeBytes = 0;
       let probeFragments = 0;
+      let recoveries = 0;
+      let timer = 0;
+      let playableTimer = 0;
+      let playableDeadline = 0;
       const minProbeBytes = 384 * 1024;
       const maxProbeFragments = 4;
-      const pingStart = performance.now();
-      fetch(url, { method: "HEAD", mode: "no-cors" })
-        .then(() => { latencyMs = Math.round(performance.now() - pingStart); })
-        .catch(() => { latencyMs = Math.round(performance.now() - pingStart); });
 
       const finish = (test) => {
         if (resolved) return;
         resolved = true;
         window.clearTimeout(timer);
+        window.clearTimeout(playableTimer);
         if (hlsTester) hlsTester.destroy();
+        try {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        } catch {
+          // The hidden probe element is best-effort cleanup.
+        }
         video.remove();
         resolve(test);
       };
-      const maybeFinish = () => {
-        if (!speedReady) return;
-        const width = Number(video.videoWidth || manifestWidth || 0);
-        const height = Number(video.videoHeight || manifestHeight || widthToHeight(width));
-        finish(okTest(resolutionToQuality(width, height), height, latencyMs, speedKbps));
+      const finishPlayable = (confidence) => {
+        const dimensions = probeDimensions(video, manifestWidth, manifestHeight);
+        const latency = latencyMs || Math.round(performance.now() - started);
+        finish(playableFallbackTest(dimensions.quality, dimensions.height, latency, confidence, "browser_hls_playable"));
       };
-      const timer = window.setTimeout(() => finish(failTest()), 9000);
-      hlsTester = new Hls({ enableWorker: true, fragLoadingTimeOut: 5000, manifestLoadingTimeOut: 5000 });
+      const schedulePlayableFallback = (delayMs) => {
+        if (resolved) return;
+        const nextDeadline = performance.now() + delayMs;
+        if (playableTimer && playableDeadline <= nextDeadline) return;
+        window.clearTimeout(playableTimer);
+        playableDeadline = nextDeadline;
+        playableTimer = window.setTimeout(() => {
+          finishPlayable(metadataReady || probeBytes > 0 ? "metadata" : "manifest");
+        }, delayMs);
+      };
+      const maybeFinish = () => {
+        if (!speedKbps) return;
+        const dimensions = probeDimensions(video, manifestWidth, manifestHeight);
+        finish(okTest(dimensions.quality, dimensions.height, latencyMs, speedKbps, { measuredBy: "browser_hls" }));
+      };
+      timer = window.setTimeout(() => {
+        if (manifestReady || metadataReady || probeBytes > 0) {
+          finishPlayable(metadataReady || probeBytes > 0 ? "metadata" : "manifest");
+        } else {
+          finish(failTest("hls_probe_timeout", "测速超时", "browser_hls"));
+        }
+      }, 11000);
+      hlsTester = new Hls({
+        enableWorker: true,
+        fragLoadingTimeOut: 6000,
+        manifestLoadingTimeOut: 6000,
+        fragLoadingMaxRetry: 2,
+        manifestLoadingMaxRetry: 2
+      });
+      hlsTester.on(Hls.Events.MANIFEST_LOADED, (_event, data) => {
+        const loading = data?.stats?.loading || {};
+        const first = Number(loading.first || loading.end || 0);
+        const start = Number(loading.start || 0);
+        if (first > start) latencyMs = Math.max(Math.round(first - start), 0);
+      });
       hlsTester.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+        manifestReady = true;
+        if (!latencyMs) latencyMs = Math.round(performance.now() - started);
         const levels = Array.from(data?.levels || hlsTester?.levels || []);
         const bestLevel = levels
           .filter((level) => Number(level?.width || level?.height || 0) > 0)
@@ -1208,12 +1254,19 @@
           manifestWidth = Number(bestLevel.width || 0);
           manifestHeight = Number(bestLevel.height || 0);
         }
+        schedulePlayableFallback(5500);
+        try {
+          hlsTester.startLoad(0);
+          const playPromise = video.play?.();
+          if (playPromise?.catch) playPromise.catch(() => {});
+        } catch {
+          // Loading the media buffer is still useful even when play() is blocked.
+        }
       });
       hlsTester.on(Hls.Events.FRAG_LOADING, () => {
         fragStart = performance.now();
       });
       hlsTester.on(Hls.Events.FRAG_LOADED, (_event, data) => {
-        if (speedReady) return;
         const stats = data?.frag?.stats || data?.part?.stats || data?.stats || {};
         const loading = stats.loading || {};
         const loadStart = Number(loading.start || 0);
@@ -1233,36 +1286,179 @@
           if (loading.first && loadStart && !latencyMs) {
             latencyMs = Math.max(Math.round(Number(loading.first) - loadStart), 0);
           }
-          speedReady = true;
           maybeFinish();
         }
       });
       hlsTester.on(Hls.Events.ERROR, (_event, data) => {
-        if (data?.fatal) finish(failTest());
+        if (!data?.fatal) return;
+        if (recoveries < 2 && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          recoveries += 1;
+          hlsTester.startLoad();
+          return;
+        }
+        if (recoveries < 2 && data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          recoveries += 1;
+          hlsTester.recoverMediaError();
+          return;
+        }
+        if (metadataReady || probeBytes > 0) {
+          finishPlayable(metadataReady || probeBytes > 0 ? "metadata" : "manifest");
+          return;
+        }
+        finish(failTest("hls_probe_failed", "测速失败", "browser_hls"));
       });
       video.onloadedmetadata = () => {
         metadataReady = true;
+        if (!latencyMs) latencyMs = Math.round(performance.now() - started);
+        schedulePlayableFallback(1200);
         maybeFinish();
       };
-      video.onerror = () => finish(failTest());
-      hlsTester.loadSource(url);
+      video.oncanplay = () => {
+        metadataReady = true;
+        if (!latencyMs) latencyMs = Math.round(performance.now() - started);
+        schedulePlayableFallback(600);
+        maybeFinish();
+      };
+      video.onerror = () => {
+        if (metadataReady || probeBytes > 0) {
+          finishPlayable("metadata");
+          return;
+        }
+        finish(failTest("hls_media_error", "测速失败", "browser_hls"));
+      };
+      hlsTester.loadSource(playbackUrl);
       hlsTester.attachMedia(video);
     });
   }
 
-  function measureNativeStream(url) {
+  async function measureNativeStream(url) {
+    const started = performance.now();
+    const controller = window.AbortController ? new AbortController() : null;
+    const timeoutMs = 9000;
+    const timer = window.setTimeout(() => controller?.abort(), timeoutMs);
+    try {
+      const response = await timedPromise(
+        fetch(url, {
+          method: "GET",
+          headers: { Range: "bytes=0-524287" },
+          ...(controller ? { signal: controller.signal } : {})
+        }),
+        timeoutMs,
+        () => controller?.abort()
+      );
+      if (!response.ok && response.status !== 206) throw new Error("bad_status");
+      const latencyMs = Math.round(performance.now() - started);
+      const remainingMs = Math.max(timeoutMs - (performance.now() - started), 1000);
+      const bytes = await timedPromise(
+        readResponseSample(response, 512 * 1024),
+        remainingMs,
+        () => controller?.abort()
+      );
+      if (!bytes) throw new Error("empty_response");
+      const elapsed = Math.max(performance.now() - started, 1);
+      const speedKbps = (bytes / 1024) / (elapsed / 1000);
+      return okTest("未知", 0, latencyMs, speedKbps, { measuredBy: "browser_range" });
+    } catch {
+      return measureMediaElementPlayback(url, "browser_media_element");
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  function measureMediaElementPlayback(url, measuredBy) {
     return new Promise((resolve) => {
       const started = performance.now();
-      fetch(url, { method: "GET", headers: { Range: "bytes=0-524287" } })
-        .then(async (response) => {
-          const latencyMs = Math.round(performance.now() - started);
-          const buffer = await response.arrayBuffer();
-          const elapsed = Math.max(performance.now() - started, 1);
-          const speedKbps = (buffer.byteLength / 1024) / (elapsed / 1000);
-          resolve(okTest("未知", 0, latencyMs, speedKbps));
-        })
-        .catch(() => resolve(failTest()));
+      const video = document.createElement("video");
+      video.muted = true;
+      video.preload = "auto";
+      video.playsInline = true;
+      video.style.cssText = "position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none;";
+      document.body.appendChild(video);
+      let resolved = false;
+      const finish = (test) => {
+        if (resolved) return;
+        resolved = true;
+        window.clearTimeout(timer);
+        try {
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        } catch {
+          // Ignore cleanup issues from detached probe media.
+        }
+        video.remove();
+        resolve(test);
+      };
+      const finishPlayable = () => {
+        const dimensions = probeDimensions(video, 0, 0);
+        const latencyMs = Math.round(performance.now() - started);
+        finish(playableFallbackTest(dimensions.quality, dimensions.height, latencyMs, "metadata", measuredBy));
+      };
+      const timer = window.setTimeout(() => {
+        if (video.readyState >= 1) {
+          finishPlayable();
+          return;
+        }
+        finish(failTest("media_probe_timeout", "测速超时", measuredBy));
+      }, 9000);
+      video.addEventListener("loadedmetadata", finishPlayable, { once: true });
+      video.addEventListener("canplay", finishPlayable, { once: true });
+      video.addEventListener("playing", finishPlayable, { once: true });
+      video.onerror = () => finish(failTest("media_probe_failed", "测速失败", measuredBy));
+      video.src = url;
+      video.load();
+      try {
+        const playPromise = video.play?.();
+        if (playPromise?.catch) playPromise.catch(() => {});
+      } catch {
+        // load() can still complete without autoplay.
+      }
     });
+  }
+
+  function timedPromise(promise, timeoutMs, onTimeout) {
+    let timer = 0;
+    const timeout = new Promise((_resolve, reject) => {
+      timer = window.setTimeout(() => {
+        if (typeof onTimeout === "function") onTimeout();
+        reject(new Error("timeout"));
+      }, Math.max(Number(timeoutMs || 0), 1));
+    });
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+  }
+
+  async function readResponseSample(response, sampleBytes) {
+    const limit = Math.max(Number(sampleBytes || 0), 1);
+    if (!response.body || typeof response.body.getReader !== "function") {
+      const buffer = await response.arrayBuffer();
+      return Math.min(buffer.byteLength, limit);
+    }
+    const reader = response.body.getReader();
+    let total = 0;
+    try {
+      while (total < limit) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        total += Number(value?.byteLength || value?.length || 0);
+      }
+    } finally {
+      try {
+        await reader.cancel();
+      } catch {
+        // The stream may already be closed.
+      }
+    }
+    return Math.min(total, limit);
+  }
+
+  function probeDimensions(video, fallbackWidth, fallbackHeight) {
+    const width = Number(video?.videoWidth || fallbackWidth || 0);
+    const height = Number(video?.videoHeight || fallbackHeight || widthToHeight(width));
+    return {
+      width,
+      height,
+      quality: resolutionToQuality(width, height)
+    };
   }
 
   function updateCandidate(candidate) {
@@ -1460,7 +1656,18 @@
     };
   }
 
-  function okTest(quality, height, latencyMs, speedKbps) {
+  function playableFallbackTest(quality, height, latencyMs, confidence, measuredBy) {
+    const fallbackSpeed = confidence === "manifest" ? 256 : 1024;
+    const test = okTest(quality, height, latencyMs, fallbackSpeed, {
+      measuredBy,
+      playableOnly: true,
+      speedLabel: "可播放"
+    });
+    test.probe_confidence = confidence;
+    return test;
+  }
+
+  function okTest(quality, height, latencyMs, speedKbps, options = {}) {
     const cappedSpeedKbps = normalizedSpeedKbps(speedKbps);
     return {
       ok: true,
@@ -1471,24 +1678,25 @@
       latency_ms: Math.max(Math.round(Number(latencyMs || 0)), 0),
       speed_kbps: cappedSpeedKbps,
       raw_speed_kbps: Math.round(Number(speedKbps || 0) * 10) / 10,
-      speed_label: speedLabel(cappedSpeedKbps),
+      speed_label: options.speedLabel || speedLabel(cappedSpeedKbps),
       score: 0,
-      measured_by: "browser_hls"
+      measured_by: options.measuredBy || "browser_probe",
+      playable_only: Boolean(options.playableOnly)
     };
   }
 
-  function failTest() {
+  function failTest(error = "browser_probe_failed", errorLabel = "测速失败", measuredBy = "browser_probe") {
     return {
       ok: false,
-      error: "browser_probe_failed",
-      error_label: "测速失败",
+      error,
+      error_label: errorLabel,
       quality: "未知",
       height: 0,
       latency_ms: 0,
       speed_kbps: 0,
       speed_label: "失败",
       score: 0,
-      measured_by: "browser_hls"
+      measured_by: measuredBy
     };
   }
 
