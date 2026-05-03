@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import logging
 import os
 import uuid
@@ -7,6 +9,7 @@ from datetime import date
 from os import PathLike
 from typing import Any
 from urllib.parse import parse_qs
+from urllib.parse import parse_qsl
 from urllib.parse import quote
 from urllib.parse import unquote
 from urllib.parse import urlparse
@@ -63,6 +66,11 @@ templates.env.filters["direct_poster"] = lambda value: _direct_poster_url(value)
 templates.env.filters["poster_src"] = lambda value: _poster_display_url(value)
 LOGGER = logging.getLogger(__name__)
 HOME_RECOMMEND_KEYS = {"new_movie", "top_movie", "hot_tv", "anime", "variety"}
+TVBOX_CONFIG_CACHE_HEADERS = {"Cache-Control": "no-store"}
+TVBOX_PROXY_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Accept": "application/json,application/xml,text/xml,text/plain,*/*",
+}
 
 
 def _direct_poster_url(value: Any) -> str:
@@ -494,6 +502,25 @@ def create_app() -> FastAPI:
         except Exception as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
 
+    @app.get("/api/tvbox/config", name="tvbox_config")
+    async def tvbox_config(request: Request, pwd: str = ""):
+        if not _tvbox_enabled():
+            raise HTTPException(status_code=404)
+        expected_password = _tvbox_password()
+        if expected_password and pwd != expected_password:
+            raise HTTPException(status_code=403, detail="TVBox 口令错误")
+        cfg = load_config()
+        payload = _tvbox_config_payload(request, cfg, pwd if expected_password else "")
+        return JSONResponse(payload, headers=TVBOX_CONFIG_CACHE_HEADERS)
+
+    @app.get("/api/tvbox/maccms/{token}/{source_key}", name="tvbox_maccms_auth")
+    async def tvbox_maccms_auth(token: str, source_key: str, request: Request):
+        return _serve_tvbox_maccms(source_key, request, token=token)
+
+    @app.get("/api/tvbox/maccms/{source_key}", name="tvbox_maccms")
+    async def tvbox_maccms(source_key: str, request: Request, pwd: str = ""):
+        return _serve_tvbox_maccms(source_key, request, pwd=pwd)
+
     @app.get("/image/douban", name="douban_image")
     async def douban_image(url: str):
         image_url = unquote(url)
@@ -604,6 +631,126 @@ def _recommend_page_config(config: dict[str, Any], level1: str, level2: str, reg
     if region:
         return _region_recommend_config(config, level1, region)
     return get_recommend_config_by_level(config, level1, level2)
+
+
+def _serve_tvbox_maccms(source_key: str, request: Request, pwd: str = "", token: str = "") -> Response:
+    if not _tvbox_enabled():
+        raise HTTPException(status_code=404)
+    expected_password = _tvbox_password()
+    if expected_password:
+        if pwd != expected_password and not _tvbox_token_matches(token, expected_password):
+            raise HTTPException(status_code=403, detail="TVBox 口令错误")
+    source = MacCMSClient(load_config()).get_source(source_key)
+    if not source:
+        raise HTTPException(status_code=404, detail="无效的视频源")
+    upstream_url = _tvbox_upstream_url(str(source.get("api") or ""), request.query_params.multi_items())
+    try:
+        upstream = requests.get(upstream_url, headers=TVBOX_PROXY_HEADERS, timeout=(5, 18))
+        upstream.raise_for_status()
+    except requests.RequestException as exc:
+        LOGGER.warning("TVBox MacCMS proxy failed: source=%s url=%s error=%s", source_key, upstream_url, exc)
+        raise HTTPException(status_code=502, detail="TVBox 上游采集接口请求失败") from exc
+    return Response(
+        upstream.content,
+        media_type=upstream.headers.get("Content-Type") or "application/json",
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+def _tvbox_enabled() -> bool:
+    return _truthy_env("TVBOX_ENABLED")
+
+
+def _truthy_env(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+
+
+def _tvbox_password() -> str:
+    return (os.environ.get("TVBOX_PASSWORD") or os.environ.get("PASSWORD") or "").strip()
+
+
+def _tvbox_password_token(password: str) -> str:
+    if not password:
+        return ""
+    return hashlib.sha256(f"rikka-tvbox:{password}".encode("utf-8")).hexdigest()[:32]
+
+
+def _tvbox_token_matches(token: str, password: str) -> bool:
+    return bool(token and password and hmac.compare_digest(str(token), _tvbox_password_token(password)))
+
+
+def _tvbox_config_payload(request: Request, cfg: dict[str, Any], password: str = "") -> dict[str, Any]:
+    site_name = str((cfg.get("site") or {}).get("name") or "MewkoTV").strip() or "MewkoTV"
+    return {
+        "spider": "",
+        "wallpaper": "",
+        "sites": _tvbox_sites(request, cfg, password),
+        "parses": [],
+        "lives": [],
+        "flags": [],
+        "ijk": [],
+        "ads": ["mimg.0c1q0l.cn", "www.googletagmanager.com", "www.google-analytics.com"],
+        "warningText": f"{site_name} TVBox 配置仅供个人已授权视频源使用",
+    }
+
+
+def _tvbox_sites(request: Request, cfg: dict[str, Any], password: str = "") -> list[dict[str, Any]]:
+    client = MacCMSClient(cfg)
+    sites = []
+    seen_keys: set[str] = set()
+    for index, source in enumerate(client.available_sources(), start=1):
+        api_url = _tvbox_source_api(request, source, password)
+        if not api_url:
+            continue
+        key = _tvbox_source_key(source, index)
+        if key in seen_keys:
+            key = f"{key}_{index}"
+        seen_keys.add(key)
+        sites.append(
+            {
+                "key": key,
+                "name": str(source.get("name") or source.get("key") or key),
+                "type": 1,
+                "api": api_url,
+                "searchable": 1,
+                "quickSearch": 1,
+                "filterable": 0,
+            }
+        )
+    return sites
+
+
+def _tvbox_source_api(request: Request, source: dict[str, Any], password: str = "") -> str:
+    source_key = str(source.get("key") or "").strip()
+    if not source_key:
+        return ""
+    token = _tvbox_password_token(password)
+    if token:
+        return str(request.url_for("tvbox_maccms_auth", token=token, source_key=source_key))
+    base_url = str(request.url_for("tvbox_maccms", source_key=source_key))
+    if not password:
+        return base_url
+    return f"{base_url}?{urlencode({'pwd': password})}"
+
+
+def _tvbox_source_key(source: dict[str, Any], index: int) -> str:
+    raw_key = str(source.get("key") or f"source_{index}").strip()
+    normalized = "".join(ch if ch.isalnum() or ch in {"_", "-"} else "_" for ch in raw_key)
+    return normalized.strip("_") or f"source_{index}"
+
+
+def _tvbox_upstream_url(api: str, incoming_params: list[tuple[str, str]]) -> str:
+    parsed = urlparse(api)
+    upstream_params = [(key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True) if key != "pwd"]
+    for key, value in incoming_params:
+        if key in {"pwd"}:
+            continue
+        upstream_params.append((key, value))
+    query = urlencode(upstream_params, doseq=True)
+    return urlunparse(parsed._replace(query=query))
 
 
 def _region_recommend_config(config: dict[str, Any], level1: str, region: str) -> dict[str, Any] | None:
