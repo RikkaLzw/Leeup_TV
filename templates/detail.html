@@ -36,9 +36,9 @@
         <h2>选集</h2>
         <div class="episode-grid">
           {% for url in item.episodes %}
-            <a href="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ loop.index0 }}&prefer=1&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">
+            <button type="button" class="episode-link" data-play-url="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ loop.index0 }}&prefer=1&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">
               {{ loop.index }}
-            </a>
+            </button>
           {% endfor %}
         </div>
       {% elif not item.episodes %}
@@ -46,4 +46,5 @@
       {% endif %}
     </div>
   </section>
+  <script src="{{ static_url('/js/detail.js') }}?v={{ asset_version }}"></script>
 {% endblock %}
