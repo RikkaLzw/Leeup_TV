@@ -115,16 +115,20 @@ input::placeholder {
 }
 
 .brand-mark {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
   width: 36px;
   height: 36px;
-  color: #102022;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.78), rgba(138, 219, 210, 0.66) 46%, rgba(216, 142, 175, 0.34));
-  border: 1px solid rgba(255, 255, 255, 0.46);
-  border-radius: 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 10px 24px rgba(83, 198, 189, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(83, 198, 189, 0.18);
+  overflow: hidden;
+}
+
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .top-search {

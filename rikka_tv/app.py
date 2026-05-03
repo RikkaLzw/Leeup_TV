@@ -610,6 +610,8 @@ def _asset_version() -> str:
     static_dir = ROOT_DIR / "static"
     paths = list((static_dir / "css").glob("*.css"))
     paths.extend((static_dir / "js").glob("*.js"))
+    paths.extend((static_dir / "icons").glob("*"))
+    paths.append(static_dir / "site.webmanifest")
     if (static_dir / "vendor").exists():
         paths.extend((static_dir / "vendor").rglob("*.js"))
     mtimes = [path.stat().st_mtime for path in paths if path.exists()]
