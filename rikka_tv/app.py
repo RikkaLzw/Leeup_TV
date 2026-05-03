@@ -230,7 +230,7 @@ def create_app() -> FastAPI:
     ):
         title = title.strip()
         if not title:
-            return RedirectResponse(str(request.url_for("index")), status_code=303)
+            return RedirectResponse(request.url_for("index").path, status_code=303)
         
         intro = ""
         if douban_id:
@@ -267,7 +267,7 @@ def create_app() -> FastAPI:
     ):
         title = title.strip()
         if not title:
-            return RedirectResponse(str(request.url_for("index")), status_code=303)
+            return RedirectResponse(request.url_for("index").path, status_code=303)
         cfg = load_config()
         video_client = MacCMSClient(cfg)
         cache_key = _resolve_play_cache_key(title, year, kind, episode)
@@ -362,7 +362,7 @@ def create_app() -> FastAPI:
             detail_data["resolve_kind"] = _infer_resolve_kind(detail_data)
         except Exception as exc:
             _flash(request, f"获取详情失败：{exc}", "error")
-            return RedirectResponse(str(request.url_for("index")), status_code=303)
+            return RedirectResponse(request.url_for("index").path, status_code=303)
         return _template(request, "detail.html", item=detail_data, show_mobile_nav=True)
 
     @app.get("/play/{source}/{video_id}", response_class=HTMLResponse, name="play")
@@ -387,7 +387,7 @@ def create_app() -> FastAPI:
             prefer_douban_poster(detail_data, cfg)
         except Exception as exc:
             _flash(request, f"获取播放信息失败：{exc}", "error")
-            return RedirectResponse(str(request.url_for("index")), status_code=303)
+            return RedirectResponse(request.url_for("index").path, status_code=303)
 
         original_item = _resolved_original_item(detail_data, resolve_title, resolve_year, resolve_kind)
         episode = max(int(episode or 0), 0)
@@ -650,6 +650,7 @@ def _template(request: Request, name: str, **context: Any) -> HTMLResponse:
     visitor_stats = _record_request_visitor(request)
     base = {
         "request": request,
+        "url_for": lambda name, **path_params: request.url_for(name, **path_params).path,
         "site": cfg.get("site", {}),
         "current_user": None,
         "messages": _pop_flashes(request),
@@ -804,7 +805,7 @@ def _detail_url(
     raw_poster: str = "",
     source_poster: str = "",
 ) -> str:
-    url = str(request.url_for("detail", source=source, video_id=video_id))
+    url = request.url_for("detail", source=source, video_id=video_id).path
     params = {
         key: value
         for key, value in {
@@ -832,7 +833,7 @@ def _play_url(
     resolve_year: str = "",
     resolve_kind: str = "",
 ) -> str:
-    url = str(request.url_for("play", source=source, video_id=video_id))
+    url = request.url_for("play", source=source, video_id=video_id).path
     params = {
         key: value
         for key, value in {
