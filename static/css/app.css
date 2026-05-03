@@ -1564,6 +1564,7 @@ code {
 
   .poster-frame {
     width: min(240px, 70vw);
+    margin: 0 auto;
   }
 
   .player-info {
