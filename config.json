@@ -11,6 +11,10 @@
   "proxy": {
     "trusted_hosts": "127.0.0.1"
   },
+  "tvbox": {
+    "enabled": true,
+    "password": "mewko"
+  },
   "cache_time": 7200,
   "detail_cache_seconds": 7200,
   "search_cache_seconds": 900,
@@ -467,20 +471,10 @@
       "api": "https://pz.v88.qzz.io/?url=https://api.maoyanapi.top/api.php/provide/vod",
       "detail": "https://www.maoyanzy.com"
     },
-    "zuidazy.co": {
-      "name": "🎬最大点播",
-      "api": "https://pz.v88.qzz.io/?url=https://zuidazy.me/api.php/provide/vod",
-      "detail": "https://zuidazy.co"
-    },
     "xinlangapi.com": {
       "name": "🎬新浪资源",
       "api": "https://pz.v88.qzz.io/?url=https://api.xinlangapi.com/xinlangapi.php/provide/vod",
       "detail": "https://xinlangapi.com"
-    },
-    "api.wwzy.tv": {
-      "name": "🎬旺旺资源",
-      "api": "https://pz.v88.qzz.io/?url=https://api.wwzy.tv/api.php/provide/vod",
-      "detail": "https://api.wwzy.tv"
     },
     "www.subozy.com": {
       "name": "🎬速播资源",
@@ -512,11 +506,6 @@
       "api": "https://pz.v88.qzz.io/?url=https://caiji.moduapi.cc/api.php/provide/vod",
       "detail": "https://caiji.moduapi.cc"
     },
-    "www.ryzyw.com": {
-      "name": "🎬如意资源",
-      "api": "https://pz.v88.qzz.io/?url=https://cj.rycjapi.com/api.php/provide/vod",
-      "detail": "https://www.ryzyw.com"
-    },
     "mtzy.me": {
       "name": "茅台资源",
       "api": "https://caiji.maotaizy.cc/api.php/provide/vod/from/mtm3u8/at/josn/",
@@ -526,6 +515,60 @@
       "name": "🎬黑料资源",
       "api": "https://pz.v88.qzz.io/?url=https://www.heiliaozyapi.com/api.php/provide/vod/",
       "detail": "https://www.heiliaozyapi.com"
-     }
+    },
+    "pg_fenwe078_cf": {
+      "name": "⭕️四个圈圈",
+      "api": "https://pg.fenwe078.cf/api.php/provide/vod",
+      "disabled": false,
+      "detail": "https://pg.fenwe078.cf"
+    },
+    "www_huyaapi_com": {
+      "name": "烂大街",
+      "api": "https://www.huyaapi.com/api.php/provide/vod",
+      "disabled": false,
+      "detail": "https://www.huyaapi.com"
+    },
+    "cj_ffzyapi_com": {
+      "name": "非凡┃资源",
+      "api": "http://cj.ffzyapi.com/api.php/provide/vod",
+      "disabled": false,
+      "detail": "http://cj.ffzyapi.com"
+    },
+    "api_yzzy_api_com": {
+      "name": "🍊柚子资源",
+      "api": "https://api.yzzy-api.com/inc/api.php",
+      "disabled": false,
+      "detail": "https://api.yzzy-api.com"
+    },
+    "zy_xiaomaomi_cc": {
+      "name": "💖分享猫咪",
+      "api": "http://zy.xiaomaomi.cc/api.php/provide/vod",
+      "disabled": false,
+      "detail": "http://zy.xiaomaomi.cc"
+    },
+    "tvbox_154_219_117_232": {
+      "name": "💝分享建安",
+      "api": "http://154.219.117.232:9981/jacloudapi.php/provide/vod/?ac=list",
+      "disabled": false,
+      "detail": "http://154.219.117.232:9981"
+    },
+    "kk_666888_club": {
+      "name": "💝分享糖豆",
+      "api": "https://kk.666888.club/vod/cibn_api.php/provide/vod",
+      "disabled": false,
+      "detail": "https://kk.666888.club"
+    },
+    "www_caiji_cyou": {
+      "name": "💝分享酒吧",
+      "api": "https://www.caiji.cyou/api.php/provide/vod",
+      "disabled": false,
+      "detail": "https://www.caiji.cyou"
+    },
+    "api_yzzy_api_com_2": {
+      "name": "💝分享高清",
+      "api": "https://api.yzzy-api.com/inc/apijson.php",
+      "disabled": false,
+      "detail": "https://api.yzzy-api.com"
+    }
   }
 }

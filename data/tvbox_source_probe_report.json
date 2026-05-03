@@ -1,0 +1,1591 @@
+{
+  "generated_at": "2026-05-03T17:58:11",
+  "input": "E:\\Python\\Rikka_TV\\接口源.txt",
+  "config": "config.json",
+  "summary": {
+    "seed_count": 42,
+    "config_fetch_count": 60,
+    "config_fetch_ok": 48,
+    "candidate_count": 78,
+    "skipped_existing": 9,
+    "tested": 69,
+    "usable": 21,
+    "maybe": 4,
+    "failed": 44,
+    "config_entries_ready": 21
+  },
+  "usable": [
+    {
+      "name": "IK",
+      "api": "https://ikunzyapi.com/api.php/provide/vod/from/ikm3u8",
+      "detail": "https://ikunzyapi.com",
+      "type": 1,
+      "origin_name": "dxawi",
+      "origin_url": "https://dxawi.github.io/0/0.json",
+      "origins": [
+        "https://dxawi.github.io/0/0.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 3,
+      "sample_title": "庆余年第二季",
+      "probe_url": "https://ikunzyapi.com/api.php/provide/vod/from/ikm3u8?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "🍊柚子资源",
+      "api": "https://api.yzzy-api.com/inc/api.php",
+      "detail": "https://api.yzzy-api.com",
+      "type": 0,
+      "origin_name": "香雅情",
+      "origin_url": "https://raw.githubusercontent.com/xyq254245/xyqonlinerule/main/XYQTVBox.json",
+      "origins": [
+        "https://raw.githubusercontent.com/xyq254245/xyqonlinerule/main/XYQTVBox.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 20,
+      "sample_title": "冰雪狙击",
+      "probe_url": "https://api.yzzy-api.com/inc/api.php?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "🥑量子资源",
+      "api": "http://cj.lziapi.com/api.php/provide/vod",
+      "detail": "http://cj.lziapi.com",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+        "http://www.meowtv.vip/tvbox.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 3,
+      "sample_title": "庆余年第二季",
+      "probe_url": "http://cj.lziapi.com/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "烂大街",
+      "api": "https://www.huyaapi.com/api.php/provide/vod",
+      "detail": "https://www.huyaapi.com",
+      "type": 1,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年 第二季",
+      "probe_url": "https://www.huyaapi.com/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "非凡┃资源",
+      "api": "http://cj.ffzyapi.com/api.php/provide/vod",
+      "detail": "http://cj.ffzyapi.com",
+      "type": 1,
+      "origin_name": "喵影视",
+      "origin_url": "http://www.meowtv.vip/tvbox.json",
+      "origins": [
+        "http://www.meowtv.vip/tvbox.json",
+        "https://www.252035.xyz/z/FongMi.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年第二季粤语",
+      "probe_url": "http://cj.ffzyapi.com/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "360资源-采集",
+      "api": "https://360zy.com/api.php/seaxml/vod",
+      "detail": "https://360zy.com",
+      "type": 1,
+      "origin_name": "真心",
+      "origin_url": "https://www.252035.xyz/z/FongMi.json",
+      "origins": [
+        "https://www.252035.xyz/z/FongMi.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 3,
+      "sample_title": "庆余年第二季",
+      "probe_url": "https://360zy.com/api.php/seaxml/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享酒吧",
+      "api": "https://www.caiji.cyou/api.php/provide/vod",
+      "detail": "https://www.caiji.cyou",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 7,
+      "sample_title": "原著解读之庆余年",
+      "probe_url": "https://www.caiji.cyou/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享建安",
+      "api": "http://154.219.117.232:9981/jacloudapi.php/provide/vod/?ac=list",
+      "detail": "http://154.219.117.232:9981",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 20,
+      "sample_title": "修仙者大战超能力",
+      "probe_url": "http://154.219.117.232:9981/jacloudapi.php/provide/vod/?ac=list?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💖分享猫咪",
+      "api": "http://zy.xiaomaomi.cc/api.php/provide/vod",
+      "detail": "http://zy.xiaomaomi.cc",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 4,
+      "sample_title": "原著解读之庆余年",
+      "probe_url": "http://zy.xiaomaomi.cc/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享糖豆",
+      "api": "https://kk.666888.club/vod/cibn_api.php/provide/vod",
+      "detail": "https://kk.666888.club",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "三体",
+      "items": 99,
+      "sample_title": "《风雨人生路》网红腰腹健身操",
+      "probe_url": "https://kk.666888.club/vod/cibn_api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93"
+    },
+    {
+      "name": "💖分享异果",
+      "api": "https://iqiyizyapi.com/api.php/provide/vod/at/xml",
+      "detail": "https://iqiyizyapi.com",
+      "type": 0,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 2,
+      "sample_title": "庆余年第二季",
+      "probe_url": "https://iqiyizyapi.com/api.php/provide/vod/at/xml?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享猫眼",
+      "api": "https://api.maoyanapi.top/api.php/provide/vod/at/json",
+      "detail": "https://api.maoyanapi.top",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 1,
+      "sample_title": "庆余年 第一季",
+      "probe_url": "https://api.maoyanapi.top/api.php/provide/vod/at/json?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💖分享卧龙",
+      "api": "https://collect.wolongzyw.com/api.php/provide/vod",
+      "detail": "https://collect.wolongzyw.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 3,
+      "sample_title": "庆余年 第二季",
+      "probe_url": "https://collect.wolongzyw.com/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💖分享非凡",
+      "api": "http://cj.ffzyapi.com/api.php/provide/vod/at/xml",
+      "detail": "http://cj.ffzyapi.com",
+      "type": 0,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年第二季粤语",
+      "probe_url": "http://cj.ffzyapi.com/api.php/provide/vod/at/xml?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享高清",
+      "api": "https://api.yzzy-api.com/inc/apijson.php",
+      "detail": "https://api.yzzy-api.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 5,
+      "sample_title": "庆余年第二季粤语",
+      "probe_url": "https://api.yzzy-api.com/inc/apijson.php?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享百度",
+      "api": "https://api.apibdzy.com//api.php/provide/vod/at/xml",
+      "detail": "https://api.apibdzy.com",
+      "type": 0,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 2,
+      "sample_title": "庆余年第一季特别版",
+      "probe_url": "https://api.apibdzy.com//api.php/provide/vod/at/xml?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享魔都",
+      "api": "https://www.mdzyapi.com/api.php/provide/vod/at/xml",
+      "detail": "https://www.mdzyapi.com",
+      "type": 0,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 3,
+      "sample_title": "庆余年之风起沧州",
+      "probe_url": "https://www.mdzyapi.com/api.php/provide/vod/at/xml?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "️✈️极速采集",
+      "api": "https://jszyapi.com/api.php/provide/vod/at/json",
+      "detail": "https://jszyapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年 第二季",
+      "probe_url": "https://jszyapi.com/api.php/provide/vod/at/json?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💖分享金鹰",
+      "api": "https://jyzyapi.com/provide/vod",
+      "detail": "https://jyzyapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年 第二季",
+      "probe_url": "https://jyzyapi.com/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "💝分享新浪",
+      "api": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/at/xml",
+      "detail": "https://api.xinlangapi.com",
+      "type": 0,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年 第二季",
+      "probe_url": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/at/xml?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    },
+    {
+      "name": "⭕️四个圈圈",
+      "api": "https://pg.fenwe078.cf/api.php/provide/vod",
+      "detail": "https://pg.fenwe078.cf",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "usable",
+      "matched_by": "search",
+      "keyword": "庆余年",
+      "items": 8,
+      "sample_title": "庆余年第二季",
+      "probe_url": "https://pg.fenwe078.cf/api.php/provide/vod?ac=videolist&wd=%E5%BA%86%E4%BD%99%E5%B9%B4"
+    }
+  ],
+  "maybe": [
+    {
+      "name": "🧞旺旺",
+      "api": "https://api.wsyzy.net/api.php/provide/vod",
+      "detail": "https://api.wsyzy.net",
+      "type": 1,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "maybe",
+      "matched_by": "list",
+      "keyword": "",
+      "items": 20,
+      "sample_title": "幽旅巫咒",
+      "probe_url": "https://api.wsyzy.net/api.php/provide/vod?ac=videolist&pg=1",
+      "note": "接口能列出内容，但测试关键词没有命中；默认不自动合并。"
+    },
+    {
+      "name": "🧊索尼高清",
+      "api": "https://suoniapi.com/api.php/provide/vod/?ac=list",
+      "detail": "https://suoniapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "maybe",
+      "matched_by": "list",
+      "keyword": "",
+      "items": 20,
+      "sample_title": "弗拉维亚",
+      "probe_url": "https://suoniapi.com/api.php/provide/vod/?ac=list?ac=videolist&pg=1",
+      "note": "接口能列出内容，但测试关键词没有命中；默认不自动合并。"
+    },
+    {
+      "name": "📛火焰狐妖",
+      "api": "https://hhzyapi.com/api.php/provide/vod/?ac=list",
+      "detail": "https://hhzyapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "maybe",
+      "matched_by": "list",
+      "keyword": "",
+      "items": 20,
+      "sample_title": "奔跑吧第十季",
+      "probe_url": "https://hhzyapi.com/api.php/provide/vod/?ac=list?ac=videolist&pg=1",
+      "note": "接口能列出内容，但测试关键词没有命中；默认不自动合并。"
+    },
+    {
+      "name": "💯光速切片",
+      "api": "https://api.guangsuapi.com/api.php/provide/vod",
+      "detail": "https://api.guangsuapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "maybe",
+      "matched_by": "list",
+      "keyword": "",
+      "items": 20,
+      "sample_title": "那位天才对伪装女友过分执着",
+      "probe_url": "https://api.guangsuapi.com/api.php/provide/vod?ac=videolist&pg=1",
+      "note": "接口能列出内容，但测试关键词没有命中；默认不自动合并。"
+    }
+  ],
+  "skipped_existing": [
+    {
+      "name": "暴风",
+      "api": "https://bfzyapi.com/api.php/provide/vod",
+      "detail": "https://bfzyapi.com",
+      "type": 1,
+      "origin_name": "dxawi",
+      "origin_url": "https://dxawi.github.io/0/0.json",
+      "origins": [
+        "https://dxawi.github.io/0/0.json",
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+        "http://www.meowtv.vip/tvbox.json",
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "烂大街！",
+      "api": "https://api.apibdzy.com/api.php/provide/vod",
+      "detail": "https://api.apibdzy.com",
+      "type": 1,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "三六零",
+      "api": "https://360zy.com/api.php/provide/vod",
+      "detail": "https://360zy.com",
+      "type": 1,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "🧞旺旺|短剧",
+      "api": "https://api.wwzy.tv/api.php/provide/vod",
+      "detail": "https://api.wwzy.tv",
+      "type": 1,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "量子",
+      "api": "https://cj.lziapi.com/api.php/provide/vod",
+      "detail": "https://cj.lziapi.com",
+      "type": 1,
+      "origin_name": "真心",
+      "origin_url": "https://www.252035.xyz/z/FongMi.json",
+      "origins": [
+        "https://www.252035.xyz/z/FongMi.json",
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "💖分享如意",
+      "api": "https://cj.rycjapi.com/api.php/provide/vod",
+      "detail": "https://cj.rycjapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "💖分享U|酷",
+      "api": "https://api.ukuapi88.com/api.php/provide/vod",
+      "detail": "https://api.ukuapi88.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "💖分享最大",
+      "api": "https://api.zuidapi.com/api.php/provide/vod/?ac=list",
+      "detail": "https://api.zuidapi.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    },
+    {
+      "name": "🥀飘零天涯",
+      "api": "https://p2100.net/api.php/provide/vod",
+      "detail": "https://p2100.net",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "reason": "already_configured"
+    }
+  ],
+  "failed_candidates": [
+    {
+      "name": "🍳┃咪酷┃影视",
+      "api": "https://yingke.yibowang.asia/api.php/provide/vod",
+      "detail": "https://yingke.yibowang.asia",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://yingke.yibowang.asia/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='yingke.yibowang.asia', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='yingke.yibowang.asia', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='yingke.yibowang.asia', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🍎备份源八",
+      "api": "http://vod.dmdh.top:5680/api.php/app",
+      "detail": "http://vod.dmdh.top:5680",
+      "type": 3,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://vod.dmdh.top:5680/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "👑优酷（官）",
+      "api": "https://www.zycaiji.net:7788/api.php/provide/vod/from/youku/at/xml",
+      "detail": "https://www.zycaiji.net:7788",
+      "type": 0,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://www.zycaiji.net:7788/api.php/provide/vod/from/youku/at/xml?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod/from/youku/at/xml?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod/from/youku/at/xml?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod/from/youku/at/xml?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "📺PPTV（官）",
+      "api": "https://www.zycaiji.net:7788/api.php/provide/vod/from/pptv/at/xml",
+      "detail": "https://www.zycaiji.net:7788",
+      "type": 0,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://www.zycaiji.net:7788/api.php/provide/vod/from/pptv/at/xml?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod/from/pptv/at/xml?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod/from/pptv/at/xml?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod/from/pptv/at/xml?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🦆北雁资源",
+      "api": "https://zy.beiyan.cc:4433/api.php/provide/vod",
+      "detail": "https://zy.beiyan.cc:4433",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://zy.beiyan.cc:4433/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='zy.beiyan.cc', port=4433): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='zy.beiyan.cc', port=4433): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='zy.beiyan.cc', port=4433): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🍌每天看看(优)",
+      "api": "http://47.113.126.237:1234/api.php/provide/vod",
+      "detail": "http://47.113.126.237:1234",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://47.113.126.237:1234/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 404; 哪吒: HTTP 404; list: HTTP 404"
+    },
+    {
+      "name": "❤景天｜4K虎斑",
+      "api": "https://zy.jinchancaiji.com/api.php/provide/vod/from/qq",
+      "detail": "https://zy.jinchancaiji.com",
+      "type": 3,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://zy.jinchancaiji.com/api.php/provide/vod/from/qq?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: not well-formed (invalid token): line 1, column 554; 哪吒: XML parse failed: not well-formed (invalid token): line 1, column 554; list: XML parse failed: not well-formed (invalid token): line 1, column 554"
+    },
+    {
+      "name": "❤茂茂｜4K虎斑",
+      "api": "https://zy.jinchancaiji.com/api.php/provide/vod/from/mgtv",
+      "detail": "https://zy.jinchancaiji.com",
+      "type": 3,
+      "origin_name": "哈基米",
+      "origin_url": "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png",
+      "origins": [
+        "https://17264.kstore.space/%E5%93%88%E5%9F%BA%E7%B1%B3.png"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://zy.jinchancaiji.com/api.php/provide/vod/from/mgtv?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: not well-formed (invalid token): line 1, column 554; 哪吒: XML parse failed: not well-formed (invalid token): line 1, column 554; list: XML parse failed: not well-formed (invalid token): line 1, column 554"
+    },
+    {
+      "name": "🍀┃豆瓣精选",
+      "api": "https://t4.secan.icu/vod?sites=all&ali_token=0c55c9f1c5cb4327ae2e51423276bb1e",
+      "detail": "https://t4.secan.icu",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://t4.secan.icu/vod?sites=all&ali_token=0c55c9f1c5cb4327ae2e51423276bb1e?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='t4.secan.icu', port=443): Max retries exceeded with url: /vod?sites=all&ali_token=0c55c9f1c5cb4327ae2e51423276bb1e?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='t4.secan.icu', port=443): Max retries exceeded with url: /vod?sites=all&ali_token=0c55c9f1c5cb4327ae2e51423276bb1e?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='t4.secan.icu', port=443): Max retries exceeded with url: /vod?sites=all&ali_token=0c55c9f1c5cb4327ae2e51423276bb1e?ac=videolist&pg=1 (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🐶多多影视(优)",
+      "api": "https://www.ddzyz1.com/api.php/provide/vod",
+      "detail": "https://www.ddzyz1.com",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://www.ddzyz1.com/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='www.ddzyz1.com', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='www.ddzyz1.com', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='www.ddzyz1.com', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🍠波比影视(优)",
+      "api": "http://xxhhsc.top/api.php/provide/vod",
+      "detail": "http://xxhhsc.top",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://xxhhsc.top/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍒木子看剧(官)",
+      "api": "https://mzkj.maccms.cf/api.php/provide/vod",
+      "detail": "https://mzkj.maccms.cf",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://mzkj.maccms.cf/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='mzkj.maccms.cf', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='mzkj.maccms.cf', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='mzkj.maccms.cf', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🥒土狗 360(官)",
+      "api": "http://360.tgzy.cc/api.php/provide/vod",
+      "detail": "http://360.tgzy.cc",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://360.tgzy.cc/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: not well-formed (invalid token): line 1, column 554; 哪吒: XML parse failed: not well-formed (invalid token): line 1, column 554; list: XML parse failed: not well-formed (invalid token): line 1, column 554"
+    },
+    {
+      "name": "🍇M3U8资源(官)",
+      "api": "https://www.zycaiji.net:7788/api.php/provide/vod",
+      "detail": "https://www.zycaiji.net:7788",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://www.zycaiji.net:7788/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='www.zycaiji.net', port=7788): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "海外看(墙外)",
+      "api": "https://haiwaikan.com/api.php/provide/vod",
+      "detail": "https://haiwaikan.com",
+      "type": 1,
+      "origin_name": "dxawi",
+      "origin_url": "https://dxawi.github.io/0/0.json",
+      "origins": [
+        "https://dxawi.github.io/0/0.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://haiwaikan.com/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: not well-formed (invalid token): line 1, column 48; 哪吒: HTTPSConnectionPool(host='haiwaikan.com', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLError(1, '[SSL] record layer failure (_ssl.c:2648)'))); list: XML parse failed: not well-formed (invalid token): line 1, column 48"
+    },
+    {
+      "name": "🍈考拉资源(官)",
+      "api": "https://ikaola.tv/api.php/provide/vod",
+      "detail": "https://ikaola.tv",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://ikaola.tv/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 403; 哪吒: HTTP 403; list: HTTP 403"
+    },
+    {
+      "name": "🍎备份源二",
+      "api": "http://kuyun.realku.cn/api.php/app",
+      "detail": "http://kuyun.realku.cn",
+      "type": 3,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://kuyun.realku.cn/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🥬多多资源2(优)",
+      "api": "https://a.7dyu.cn/api.php/provide/vod",
+      "detail": "https://a.7dyu.cn",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://a.7dyu.cn/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='a.7dyu.cn', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='a.7dyu.cn', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='a.7dyu.cn', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🥪影图影视(聚)",
+      "api": "https://cj.vodimg.top/api.php/provide/vod",
+      "detail": "https://cj.vodimg.top",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://cj.vodimg.top/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 403; 哪吒: HTTP 403; list: HTTP 403"
+    },
+    {
+      "name": "🥫幻风影视(聚)",
+      "api": "http://vip857.top/api.php/provide/vod",
+      "detail": "http://vip857.top",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://vip857.top/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🥗天天影视(聚)",
+      "api": "http://tttv.cf/api.php/provide/vod",
+      "detail": "http://tttv.cf",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://tttv.cf/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍧铭轩影视(聚)",
+      "api": "http://lz0716.com/api.php/provide/vod",
+      "detail": "http://lz0716.com",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://lz0716.com/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍚小鸟动漫(聚)",
+      "api": "http://xydm.baicai.buzz/api.php/provide/vod",
+      "detail": "http://xydm.baicai.buzz",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://xydm.baicai.buzz/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: not JSON/XML: empty response; 哪吒: not JSON/XML: empty response; list: not JSON/XML: empty response"
+    },
+    {
+      "name": "🥑盘看影视(聚)",
+      "api": "http://tvcaiji.pankk.cn/api.php/provide/vod",
+      "detail": "http://tvcaiji.pankk.cn",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://tvcaiji.pankk.cn/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: not JSON/XML: 当前域名或者端口未绑定,请到后台绑定，该消息可以在后台自定义！; 哪吒: not JSON/XML: 当前域名或者端口未绑定,请到后台绑定，该消息可以在后台自定义！; list: not JSON/XML: 当前域名或者端口未绑定,请到后台绑定，该消息可以在后台自定义！"
+    },
+    {
+      "name": "🍱千寻时光(聚)",
+      "api": "http://wy.dqyhg.cn/api.php/provide/vod",
+      "detail": "http://wy.dqyhg.cn",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://wy.dqyhg.cn/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍑诺讯资源(官)",
+      "api": "http://caiji.nxflv.com/api.php/provide/vod",
+      "detail": "http://caiji.nxflv.com",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://caiji.nxflv.com/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: mismatched tag: line 1, column 61; 哪吒: XML parse failed: mismatched tag: line 1, column 61; list: XML parse failed: mismatched tag: line 1, column 61"
+    },
+    {
+      "name": "🥕忆梦资源(官)",
+      "api": "http://anltv.cn/api.php/provide/vod",
+      "detail": "http://anltv.cn",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://anltv.cn/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍟雨哥影视(聚)",
+      "api": "http://cj.baozi66.top:66/api.php/provide/vod",
+      "detail": "http://cj.baozi66.top:66",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://cj.baozi66.top:66/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: not JSON/XML: closed; 哪吒: not JSON/XML: closed; list: not JSON/XML: closed"
+    },
+    {
+      "name": "🍹MBO 影视(聚)",
+      "api": "https://www.mbomovie.com/api.php/provide/vod/at/xml",
+      "detail": "https://www.mbomovie.com",
+      "type": 0,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://www.mbomovie.com/api.php/provide/vod/at/xml?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: not well-formed (invalid token): line 1, column 173; 哪吒: XML parse failed: not well-formed (invalid token): line 1, column 173; list: XML parse failed: not well-formed (invalid token): line 1, column 173"
+    },
+    {
+      "name": "豆瓣 | 采集",
+      "api": "https://caiji.dbzy.tv/api.php/provide/vod/from/dbm3u8/at/josn",
+      "detail": "https://caiji.dbzy.tv",
+      "type": 1,
+      "origin_name": "真心",
+      "origin_url": "https://www.252035.xyz/z/FongMi.json",
+      "origins": [
+        "https://www.252035.xyz/z/FongMi.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://caiji.dbzy.tv/api.php/provide/vod/from/dbm3u8/at/josn?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='caiji.dbzy.tv', port=443): Max retries exceeded with url: /api.php/provide/vod/from/dbm3u8/at/josn?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='caiji.dbzy.tv', port=443): Max retries exceeded with url: /api.php/provide/vod/from/dbm3u8/at/josn?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='caiji.dbzy.tv', port=443): Max retries exceeded with url: /api.php/provide/vod/from/dbm3u8/at/josn?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🍬海玉影视(聚)",
+      "api": "http://tv2.hykjtv.cn/api.php/provide/vod",
+      "detail": "http://tv2.hykjtv.cn",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://tv2.hykjtv.cn/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "❤️‍分享官采",
+      "api": "http://39.105.18.5:5565/api.php/app",
+      "detail": "http://39.105.18.5:5565",
+      "type": 3,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://39.105.18.5:5565/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTP 404; 哪吒: HTTP 404; list: HTTP 404"
+    },
+    {
+      "name": "💝分享久久",
+      "api": "http://99cms.jj99.icu:8199/api.php/app",
+      "detail": "http://99cms.jj99.icu:8199",
+      "type": 3,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://99cms.jj99.icu:8199/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTP 404; 哪吒: HTTP 404; list: HTTP 404"
+    },
+    {
+      "name": "💝分享金蝉",
+      "api": "http://zy.jinchancaiji.com/api.php/provide/vod",
+      "detail": "http://zy.jinchancaiji.com",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://zy.jinchancaiji.com/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: XML parse failed: not well-formed (invalid token): line 1, column 554; 哪吒: XML parse failed: not well-formed (invalid token): line 1, column 554; list: XML parse failed: not well-formed (invalid token): line 1, column 554"
+    },
+    {
+      "name": "💖分享千梦",
+      "api": "https://www.qmjzys.com/api.php/app",
+      "detail": "https://www.qmjzys.com",
+      "type": 3,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://www.qmjzys.com/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='www.qmjzys.com', port=443): Max retries exceeded with url: /api.php/app?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='www.qmjzys.com', port=443): Max retries exceeded with url: /api.php/app?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='www.qmjzys.com', port=443): Max retries exceeded with url: /api.php/app?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "💖分享豆瓣",
+      "api": "https://caiji.dbzy.tv/api.php/provide/vod",
+      "detail": "https://caiji.dbzy.tv",
+      "type": 1,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://caiji.dbzy.tv/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPSConnectionPool(host='caiji.dbzy.tv', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E4%B8%89%E4%BD%93 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); 哪吒: HTTPSConnectionPool(host='caiji.dbzy.tv', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&wd=%E5%93%AA%E5%90%92 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)'))); list: HTTPSConnectionPool(host='caiji.dbzy.tv', port=443): Max retries exceeded with url: /api.php/provide/vod?ac=videolist&pg=1 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "🌶天堂资源(官)",
+      "api": "http://vipmv.cc/api.php/provide/vod",
+      "detail": "http://vipmv.cc",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://vipmv.cc/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 404; 哪吒: HTTP 404; list: HTTP 404"
+    },
+    {
+      "name": "💖分享全网",
+      "api": "http://chaoqianys.top:91/api.php/app",
+      "detail": "http://chaoqianys.top:91",
+      "type": 3,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://chaoqianys.top:91/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTP 404; 哪吒: HTTP 404; list: HTTP 404"
+    },
+    {
+      "name": "💝分享起跑",
+      "api": "https://qpcj.69mini.com/api.php/app",
+      "detail": "https://qpcj.69mini.com",
+      "type": 3,
+      "origin_name": "分享",
+      "origin_url": "https://raw.githubusercontent.com/maoystv/6/main/000.json",
+      "origins": [
+        "https://raw.githubusercontent.com/maoystv/6/main/000.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "https://qpcj.69mini.com/api.php/app?ac=videolist&pg=1",
+      "error": "三体: HTTP 404; 哪吒: HTTP 404; list: HTTP 404"
+    },
+    {
+      "name": "🥭西柚影视(优)",
+      "api": "http://43.135.75.180:9999/api.php/provide/vod",
+      "detail": "http://43.135.75.180:9999",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://43.135.75.180:9999/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍨百淘影视(聚)",
+      "api": "http://ys.58g8.com/api.php/provide/vod",
+      "detail": "http://ys.58g8.com",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://ys.58g8.com/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTP 503; 哪吒: HTTP 503; list: HTTP 503"
+    },
+    {
+      "name": "🍳江湖官采(官)",
+      "api": "http://119.29.1.173/api.php/provide/vod",
+      "detail": "http://119.29.1.173",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://119.29.1.173/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0); 哪吒: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0); list: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0)"
+    },
+    {
+      "name": "🥤阿里影视(聚)",
+      "api": "http://aliys.cn:90/api.php/provide/vod",
+      "detail": "http://aliys.cn:90",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://aliys.cn:90/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0); 哪吒: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0); list: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0)"
+    },
+    {
+      "name": "🌭MX 影院(聚)",
+      "api": "http://49.235.107.145:81/api.php/provide/vod",
+      "detail": "http://49.235.107.145:81",
+      "type": 1,
+      "origin_name": "小苹果接口",
+      "origin_url": "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json",
+      "origins": [
+        "https://bitbucket.org/xduo/duoapi/raw/master/xpg.json"
+      ],
+      "status": "failed",
+      "matched_by": "",
+      "keyword": "",
+      "items": 0,
+      "sample_title": "",
+      "probe_url": "http://49.235.107.145:81/api.php/provide/vod?ac=videolist&pg=1",
+      "error": "三体: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0); 哪吒: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0); list: HTTPConnectionPool(host='127.0.0.1', port=10808): Read timed out. (read timeout=10.0)"
+    }
+  ],
+  "failed_configs": [
+    {
+      "name": "OK影视公开接口",
+      "url": "http://ok213.top/ok",
+      "final_url": "http://ok213.top/ok",
+      "status_code": 503,
+      "content_type": "",
+      "error": "HTTP 503"
+    },
+    {
+      "name": "OK影视内部接口",
+      "url": "http://ok213.top/tv",
+      "final_url": "http://ok213.top/tv",
+      "status_code": 503,
+      "content_type": "",
+      "error": "HTTP 503"
+    },
+    {
+      "name": "T4接口",
+      "url": "https://gitee.com/free-kingdom/dc/raw/main/T4.json",
+      "final_url": "https://gitee.com/free-kingdom/dc/raw/main/T4.json",
+      "status_code": 451,
+      "content_type": "text/plain; charset=UTF-8",
+      "error": "HTTP 451"
+    },
+    {
+      "name": "道长接口",
+      "url": "https://cdn.gitmirror.com/bb/xduo/libs/master/index.json",
+      "final_url": "",
+      "status_code": 0,
+      "content_type": "",
+      "error": "HTTPSConnectionPool(host='cdn.gitmirror.com', port=443): Max retries exceeded with url: /bb/xduo/libs/master/index.json (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "嗷呜线路",
+      "url": "https://cnb.cool/aooooowuuuuu/FreeSpider/-/git/raw/main/config",
+      "final_url": "https://cnb.cool/aooooowuuuuu/FreeSpider/-/git/raw/main/config",
+      "status_code": 404,
+      "content_type": "application/json",
+      "error": "HTTP 404"
+    },
+    {
+      "name": "欧歌",
+      "url": "https://xn--anna-wn6lw489o.v.nxog.top/m/",
+      "final_url": "",
+      "status_code": 0,
+      "content_type": "",
+      "error": "HTTPSConnectionPool(host='xn--anna-wn6lw489o.v.nxog.top', port=443): Read timed out. (read timeout=5)"
+    },
+    {
+      "name": "肥猫接口",
+      "url": "https://mpanso.me/DEMO.json",
+      "final_url": "",
+      "status_code": 0,
+      "content_type": "",
+      "error": "HTTPSConnectionPool(host='mpanso.me', port=443): Max retries exceeded with url: /DEMO.json (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1028)')))"
+    },
+    {
+      "name": "肥猫接口",
+      "url": "http://sduc.site/upload/dycms/20241205-1/4e82f163deedcf520964088de25001af.png",
+      "final_url": "http://sduc.site/upload/dycms/20241205-1/4e82f163deedcf520964088de25001af.png",
+      "status_code": 503,
+      "content_type": "",
+      "error": "HTTP 503"
+    },
+    {
+      "name": "肥猫接口",
+      "url": "https://ghproxy.net/https://raw.githubusercontent.com/yoursmile66/TVBox/main/XC.json",
+      "final_url": "",
+      "status_code": 0,
+      "content_type": "",
+      "error": "HTTPSConnectionPool(host='ghproxy.net', port=443): Max retries exceeded with url: /https://raw.githubusercontent.com/yoursmile66/TVBox/main/XC.json (Caused by SSLError(SSLError(1, '[SSL] record layer failure (_ssl.c:2648)')))"
+    },
+    {
+      "name": "肥猫接口",
+      "url": "https://shubao.site/static/img/logo.png",
+      "final_url": "",
+      "status_code": 0,
+      "content_type": "",
+      "error": "HTTPSConnectionPool(host='shubao.site', port=443): Max retries exceeded with url: /static/img/logo.png (Caused by SSLError(SSLError(1, '[SSL] record layer failure (_ssl.c:2648)')))"
+    },
+    {
+      "name": "HG接口",
+      "url": "http://api.hgyx.vip/TVBox/MaooXB/0206.jpg;md5;ddaf13d7923ea1e333ea06ed930778a2",
+      "final_url": "http://api.hgyx.vip/TVBox/MaooXB/0206.jpg;md5;ddaf13d7923ea1e333ea06ed930778a2",
+      "status_code": 404,
+      "content_type": "text/html",
+      "error": "HTTP 404"
+    },
+    {
+      "name": "摸鱼儿接口",
+      "url": "https://tc-new.z.wiki/autoupload/iYHTWVx6T8RrCmqdGD6MOdiO_OyvX7mIgxFBfDMDErs/20260218/FLpz/700X700/PeekPili_1.1.5.apk_icon.png",
+      "final_url": "",
+      "status_code": 0,
+      "content_type": "",
+      "error": "HTTPSConnectionPool(host='tc-new.z.wiki', port=443): Read timed out. (read timeout=5)"
+    }
+  ],
+  "config_snippet": {
+    "api_site": {
+      "tvbox_360zy_com": {
+        "name": "360资源-采集",
+        "api": "https://360zy.com/api.php/seaxml/vod",
+        "disabled": false,
+        "detail": "https://360zy.com"
+      },
+      "ikunzyapi_com": {
+        "name": "IK",
+        "api": "https://ikunzyapi.com/api.php/provide/vod/from/ikm3u8",
+        "disabled": false,
+        "detail": "https://ikunzyapi.com"
+      },
+      "pg_fenwe078_cf": {
+        "name": "⭕️四个圈圈",
+        "api": "https://pg.fenwe078.cf/api.php/provide/vod",
+        "disabled": false,
+        "detail": "https://pg.fenwe078.cf"
+      },
+      "www_huyaapi_com": {
+        "name": "烂大街",
+        "api": "https://www.huyaapi.com/api.php/provide/vod",
+        "disabled": false,
+        "detail": "https://www.huyaapi.com"
+      },
+      "cj_ffzyapi_com": {
+        "name": "非凡┃资源",
+        "api": "http://cj.ffzyapi.com/api.php/provide/vod",
+        "disabled": false,
+        "detail": "http://cj.ffzyapi.com"
+      },
+      "jszyapi_com": {
+        "name": "️✈️极速采集",
+        "api": "https://jszyapi.com/api.php/provide/vod/at/json",
+        "disabled": false,
+        "detail": "https://jszyapi.com"
+      },
+      "api_yzzy_api_com": {
+        "name": "🍊柚子资源",
+        "api": "https://api.yzzy-api.com/inc/api.php",
+        "disabled": false,
+        "detail": "https://api.yzzy-api.com"
+      },
+      "collect_wolongzyw_com": {
+        "name": "💖分享卧龙",
+        "api": "https://collect.wolongzyw.com/api.php/provide/vod",
+        "disabled": false,
+        "detail": "https://collect.wolongzyw.com"
+      },
+      "iqiyizyapi_com": {
+        "name": "💖分享异果",
+        "api": "https://iqiyizyapi.com/api.php/provide/vod/at/xml",
+        "disabled": false,
+        "detail": "https://iqiyizyapi.com"
+      },
+      "zy_xiaomaomi_cc": {
+        "name": "💖分享猫咪",
+        "api": "http://zy.xiaomaomi.cc/api.php/provide/vod",
+        "disabled": false,
+        "detail": "http://zy.xiaomaomi.cc"
+      },
+      "jyzyapi_com": {
+        "name": "💖分享金鹰",
+        "api": "https://jyzyapi.com/provide/vod",
+        "disabled": false,
+        "detail": "https://jyzyapi.com"
+      },
+      "cj_ffzyapi_com_2": {
+        "name": "💖分享非凡",
+        "api": "http://cj.ffzyapi.com/api.php/provide/vod/at/xml",
+        "disabled": false,
+        "detail": "http://cj.ffzyapi.com"
+      },
+      "tvbox_154_219_117_232": {
+        "name": "💝分享建安",
+        "api": "http://154.219.117.232:9981/jacloudapi.php/provide/vod/?ac=list",
+        "disabled": false,
+        "detail": "http://154.219.117.232:9981"
+      },
+      "api_xinlangapi_com": {
+        "name": "💝分享新浪",
+        "api": "https://api.xinlangapi.com/xinlangapi.php/provide/vod/at/xml",
+        "disabled": false,
+        "detail": "https://api.xinlangapi.com"
+      },
+      "api_maoyanapi_top": {
+        "name": "💝分享猫眼",
+        "api": "https://api.maoyanapi.top/api.php/provide/vod/at/json",
+        "disabled": false,
+        "detail": "https://api.maoyanapi.top"
+      },
+      "api_apibdzy_com": {
+        "name": "💝分享百度",
+        "api": "https://api.apibdzy.com//api.php/provide/vod/at/xml",
+        "disabled": false,
+        "detail": "https://api.apibdzy.com"
+      },
+      "kk_666888_club": {
+        "name": "💝分享糖豆",
+        "api": "https://kk.666888.club/vod/cibn_api.php/provide/vod",
+        "disabled": false,
+        "detail": "https://kk.666888.club"
+      },
+      "www_caiji_cyou": {
+        "name": "💝分享酒吧",
+        "api": "https://www.caiji.cyou/api.php/provide/vod",
+        "disabled": false,
+        "detail": "https://www.caiji.cyou"
+      },
+      "api_yzzy_api_com_2": {
+        "name": "💝分享高清",
+        "api": "https://api.yzzy-api.com/inc/apijson.php",
+        "disabled": false,
+        "detail": "https://api.yzzy-api.com"
+      },
+      "www_mdzyapi_com": {
+        "name": "💝分享魔都",
+        "api": "https://www.mdzyapi.com/api.php/provide/vod/at/xml",
+        "disabled": false,
+        "detail": "https://www.mdzyapi.com"
+      },
+      "cj_lziapi_com": {
+        "name": "🥑量子资源",
+        "api": "http://cj.lziapi.com/api.php/provide/vod",
+        "disabled": false,
+        "detail": "http://cj.lziapi.com"
+      }
+    }
+  }
+}

@@ -11,3 +11,4 @@ dist/
 data/*.sqlite3
 data/*.sqlite3-*
 .env
+config.json.bak.*
