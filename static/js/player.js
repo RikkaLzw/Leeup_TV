@@ -123,28 +123,22 @@
     updateCastButton();
     castButton?.addEventListener("click", startCasting);
     castPanelButton?.addEventListener("click", startCasting);
-    if (player.remote) {
-      player.remote.addEventListener("connect", () => updateCastButton("已投屏"));
-      player.remote.addEventListener("disconnect", () => updateCastButton());
-      try {
-        const availability = player.remote.watchAvailability?.(() => updateCastButton());
-        availability?.catch?.(() => updateCastButton());
-      } catch {
-        updateCastButton();
-      }
-    }
+    player.addEventListener?.("webkitplaybacktargetavailabilitychanged", updateCastButton);
+    player.addEventListener?.("webkitcurrentplaybacktargetiswirelesschanged", () => {
+      updateCastButton(player.webkitCurrentPlaybackTargetIsWireless ? "AirPlay 中" : "");
+    });
   }
 
   function updateCastButton(label) {
     if (!player) return;
-    const supported = canUseAirPlay() || canUseRemotePlayback();
-    const text = label || (supported ? "投屏" : "不可投屏");
+    const supported = canUseAirPlay();
+    const text = label || (supported ? "AirPlay" : "仅 AirPlay");
     [castButton, castPanelButton].forEach((button) => {
       if (!button) return;
       button.hidden = false;
       button.classList.toggle("unsupported", !supported);
       button.setAttribute("aria-disabled", supported ? "false" : "true");
-      button.title = supported ? "投屏到可用设备" : "当前浏览器或设备不支持网页投屏";
+      button.title = supported ? "通过 AirPlay 投屏" : "请使用 Safari 或苹果设备的 AirPlay";
       const labelNode = button.querySelector("span");
       if (labelNode) {
         labelNode.textContent = text;
@@ -158,34 +152,19 @@
     return Boolean(player && typeof player.webkitShowPlaybackTargetPicker === "function");
   }
 
-  function canUseRemotePlayback() {
-    return Boolean(player?.remote && typeof player.remote.prompt === "function");
-  }
-
-  async function startCasting() {
+  function startCasting() {
     if (!player) return;
     if (canUseAirPlay()) {
       try {
         player.webkitShowPlaybackTargetPicker();
-        showPlayerNotice("请选择投屏设备");
+        showPlayerNotice("请选择 AirPlay 设备");
         return;
       } catch {
-        // Try Remote Playback next when AirPlay picker is unavailable at runtime.
-      }
-    }
-    if (canUseRemotePlayback()) {
-      try {
-        await player.remote.prompt();
-        showPlayerNotice("请选择投屏设备");
-        updateCastButton();
-        return;
-      } catch (error) {
-        const name = String(error?.name || "");
-        showPlayerNotice(name === "NotFoundError" ? "未找到可用投屏设备" : "投屏未启动");
+        showPlayerNotice("AirPlay 未启动");
         return;
       }
     }
-    showPlayerNotice("当前浏览器或设备不支持投屏");
+    showPlayerNotice("当前只支持 Safari / 苹果设备 AirPlay");
   }
 
   function setStatus(text) {
