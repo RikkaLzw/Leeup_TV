@@ -231,6 +231,14 @@ def create_app() -> FastAPI:
         title = title.strip()
         if not title:
             return RedirectResponse(str(request.url_for("index")), status_code=303)
+        
+        intro = ""
+        if douban_id:
+            try:
+                intro = DoubanClient(load_config()).get_subject(douban_id, kind or "movie").get("intro", "")
+            except Exception:
+                pass
+
         detail_data = _douban_detail_item(
             title=title,
             year=year,
@@ -241,6 +249,7 @@ def create_app() -> FastAPI:
             source_poster=source_poster,
             rate=rate,
             subtitle=subtitle,
+            intro=intro,
         )
         return _template(request, "detail.html", item=detail_data, show_mobile_nav=True)
 
@@ -858,6 +867,7 @@ def _douban_detail_item(
     source_poster: str = "",
     rate: str = "",
     subtitle: str = "",
+    intro: str = "",
 ) -> dict[str, Any]:
     kind = str(kind or "").strip()
     type_label = "电影" if kind == "movie" else "剧集" if kind in {"tv", "show"} else "豆瓣推荐"
@@ -866,6 +876,9 @@ def _douban_detail_item(
         desc_parts.append(subtitle)
     if rate:
         desc_parts.append(f"豆瓣评分 {rate}")
+    
+    final_desc = intro if intro else " · ".join(part for part in desc_parts if part)
+    
     return {
         "provider": "douban",
         "id": str(douban_id or ""),
@@ -886,7 +899,7 @@ def _douban_detail_item(
         "resolve_kind": kind,
         "rate": str(rate or ""),
         "subtitle": str(subtitle or ""),
-        "desc": " · ".join(part for part in desc_parts if part),
+        "desc": final_desc,
     }
 
 

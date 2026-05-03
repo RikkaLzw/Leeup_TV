@@ -44,6 +44,10 @@ class DoubanClient:
         data = self._get_json(target)
         return [self._map_category_item(item, kind) for item in data.get("items", [])]
 
+    def get_subject(self, douban_id: str, kind: str = "movie") -> dict[str, Any]:
+        target = f"{self.base.rstrip('/')}/rexxar/api/v2/{kind}/{douban_id}"
+        return self._get_json(target)
+
     def recommend(
         self,
         kind: str,
