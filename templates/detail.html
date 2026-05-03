@@ -26,9 +26,8 @@
         {% set resolve_kind = item.resolve_kind or item.kind or '' %}
         {% if item.provider == "douban" %}
           <a class="primary-button" href="{{ url_for('resolve_play') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&douban_id={{ item.douban_id|urlencode }}&kind={{ resolve_kind|urlencode }}&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">优选播放</a>
-          <a class="secondary-button" href="{{ url_for('search') }}?q={{ item.title|urlencode }}">搜索片源</a>
         {% else %}
-          <a class="primary-button" href="{{ url_for('resolve_play') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&kind={{ resolve_kind|urlencode }}&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">优选播放</a>
+          <a class="primary-button" href="{{ url_for('play', source=item.source, video_id=item.id) }}?prefer=1&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">优选播放</a>
           <a class="secondary-button" href="{{ url_for('play', source=item.source, video_id=item.id) }}?prefer=0&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">直接播放</a>
         {% endif %}
       </div>
@@ -37,7 +36,7 @@
         <h2>选集</h2>
         <div class="episode-grid">
           {% for url in item.episodes %}
-            <a href="{{ url_for('resolve_play') }}?title={{ item.title|urlencode }}&year={{ item.year|urlencode }}&kind={{ resolve_kind|urlencode }}&episode={{ loop.index0 }}&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">
+            <a href="{{ url_for('play', source=item.source, video_id=item.id) }}?episode={{ loop.index0 }}&prefer=1&poster={{ item.poster|urlencode }}&raw_poster={{ item.raw_poster|urlencode }}&source_poster={{ item.source_poster|urlencode }}">
               {{ loop.index }}
             </a>
           {% endfor %}
