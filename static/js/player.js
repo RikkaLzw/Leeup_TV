@@ -20,6 +20,7 @@
   let outroSkippedKey = "";
   let autoSwitchAllowed = true;
   let playerOptions = loadPlayerOptions();
+  let castReady = false;
   const hlsProxyEnabled = Boolean(cfg.playerOptions?.hlsProxyEnabled);
   const hlsProxyBypassHosts = Array.isArray(cfg.playerOptions?.hlsProxyBypassHosts)
     ? cfg.playerOptions.hlsProxyBypassHosts.map((host) => String(host || "").trim().toLowerCase()).filter(Boolean)
@@ -131,18 +132,20 @@
     player.addEventListener?.("webkitcurrentplaybacktargetiswirelesschanged", () => {
       updateCastButton(player.webkitCurrentPlaybackTargetIsWireless ? "AirPlay 中" : "");
     });
+    setupGoogleCast();
   }
 
   function updateCastButton(label) {
     if (!player) return;
-    const supported = canUseAirPlay();
-    const text = label || (supported ? "AirPlay" : "仅 AirPlay");
+    const mode = castMode();
+    const supported = mode !== "";
+    const text = label || castButtonText(mode);
     [castButton, castPanelButton].forEach((button) => {
       if (!button) return;
       button.hidden = false;
       button.classList.toggle("unsupported", !supported);
       button.setAttribute("aria-disabled", supported ? "false" : "true");
-      button.title = supported ? "通过 AirPlay 投屏" : "请使用 Safari 或苹果设备的 AirPlay";
+      button.title = supported ? castButtonTitle(mode) : "当前浏览器或设备不支持投屏";
       const labelNode = button.querySelector("span");
       if (labelNode) {
         labelNode.textContent = text;
@@ -152,9 +155,61 @@
     });
   }
 
+  function castMode() {
+    if (canUseAirPlay()) return "airplay";
+    if (canUseGoogleCast()) return "chromecast";
+    return "";
+  }
+
+  function castButtonText(mode) {
+    if (mode === "airplay") return "AirPlay";
+    if (mode === "chromecast") return "Cast";
+    return "不可投屏";
+  }
+
+  function castButtonTitle(mode) {
+    if (mode === "airplay") return "通过 AirPlay 投屏";
+    if (mode === "chromecast") return "通过 Chromecast / Google TV 投屏";
+    return "当前浏览器或设备不支持投屏";
+  }
+
   function canUseAirPlay() {
     return Boolean(player && typeof player.webkitShowPlaybackTargetPicker === "function");
   }
+
+  function canUseGoogleCast() {
+    return Boolean(castReady && window.cast?.framework && window.chrome?.cast);
+  }
+
+  function setupGoogleCast() {
+    if (!window.chrome) window.chrome = {};
+    window.__rikkaOnCastApiAvailable = (isAvailable) => {
+      if (!isAvailable || !window.cast?.framework || !window.chrome?.cast) {
+        castReady = false;
+        updateCastButton();
+        return;
+      }
+      try {
+        const context = window.cast.framework.CastContext.getInstance();
+        context.setOptions({
+          receiverApplicationId: window.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+          autoJoinPolicy: window.chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+        });
+        castReady = true;
+      } catch {
+        castReady = false;
+      }
+      updateCastButton();
+    };
+    if (typeof window.__rikkaCastAvailability === "boolean") {
+      window.__rikkaOnCastApiAvailable(window.__rikkaCastAvailability);
+      return;
+    }
+    if (window.cast?.framework && window.chrome?.cast) {
+      window.__rikkaOnCastApiAvailable(true);
+    }
+  }
+
 
   function startCasting() {
     if (!player) return;
@@ -169,7 +224,43 @@
         return;
       }
     }
-    showPlayerNotice("当前只支持 Safari / 苹果设备 AirPlay");
+    if (canUseGoogleCast()) {
+      startGoogleCast();
+      return;
+    }
+    showPlayerNotice("当前浏览器或设备不支持投屏");
+  }
+
+  async function startGoogleCast() {
+    const sourceUrl = castPlaybackUrl();
+    if (!sourceUrl) {
+      showPlayerNotice("无可投屏播放地址");
+      return;
+    }
+    try {
+      showPlayerNotice("正在连接 Cast 设备");
+      const context = window.cast.framework.CastContext.getInstance();
+      let session = context.getCurrentSession();
+      if (!session) {
+        session = await context.requestSession();
+      }
+      if (!session) {
+        showPlayerNotice("未选择 Cast 设备");
+        return;
+      }
+      const mediaInfo = new window.chrome.cast.media.MediaInfo(sourceUrl, castContentType(sourceUrl));
+      mediaInfo.metadata = castMediaMetadata();
+      const request = new window.chrome.cast.media.LoadRequest(mediaInfo);
+      const currentTime = Number(player.currentTime || 0);
+      if (Number.isFinite(currentTime) && currentTime > 0) request.currentTime = currentTime;
+      request.autoplay = true;
+      await session.loadMedia(request);
+      showPlayerNotice("已发送到 Cast 设备");
+      updateCastButton("Cast 中");
+    } catch (error) {
+      const code = String(error?.code || error?.message || error || "");
+      showPlayerNotice(code === "cancel" ? "已取消 Cast" : "Cast 未启动");
+    }
   }
 
   function prepareNativeAirPlaySource() {
@@ -184,6 +275,47 @@
     }
     player.src = sourceUrl;
     player.load();
+  }
+
+  function castPlaybackUrl() {
+    const sourceUrl = currentEpisodeUrl();
+    if (!sourceUrl) return "";
+    const playbackUrl = isHlsUrl(sourceUrl) ? playbackHlsUrl(sourceUrl) : sourceUrl;
+    return absolutePlaybackUrl(playbackUrl);
+  }
+
+  function absolutePlaybackUrl(url) {
+    const value = String(url || "").trim();
+    if (!value) return "";
+    try {
+      return new URL(value, window.location.href).href;
+    } catch {
+      return value;
+    }
+  }
+
+  function castContentType(url) {
+    if (isHlsUrl(url) || isHlsProxyUrl(url)) return "application/x-mpegURL";
+    if (/\.mp4(?:[?#]|$)/i.test(String(url || ""))) return "video/mp4";
+    return "video/mp4";
+  }
+
+  function isHlsProxyUrl(url) {
+    try {
+      const parsed = new URL(String(url || ""), window.location.href);
+      return parsed.pathname === "/hls-proxy" && isHlsUrl(parsed.searchParams.get("url") || "");
+    } catch {
+      return false;
+    }
+  }
+
+  function castMediaMetadata() {
+    const metadata = new window.chrome.cast.media.GenericMediaMetadata();
+    metadata.title = String(detail.title || "");
+    metadata.subtitle = [detail.source_name, episodeTitle(currentEpisode)].filter(Boolean).join(" · ");
+    const image = String(detail.raw_poster || detail.poster || detail.source_poster || "");
+    if (image) metadata.images = [new window.chrome.cast.Image(absolutePlaybackUrl(image))];
+    return metadata;
   }
 
   function setStatus(text) {
