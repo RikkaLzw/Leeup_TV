@@ -763,6 +763,7 @@
     if (player.paused) {
       playMedia();
     } else {
+      cancelFullscreenPlaybackResume();
       player.pause();
     }
   }
@@ -813,20 +814,26 @@
 
   function keepPlaybackAfterFullscreen() {
     fullscreenPlaybackResumeUntil = Date.now() + 1600;
+    const resumeToken = fullscreenPlaybackResumeUntil;
     [60, 220, 520, 1000, 1500].forEach((delay) => {
-      window.setTimeout(resumePlaybackAfterFullscreen, delay);
+      window.setTimeout(() => resumePlaybackAfterFullscreen(resumeToken), delay);
     });
+  }
+
+  function cancelFullscreenPlaybackResume() {
+    fullscreenPlaybackResumeUntil = 0;
   }
 
   function handleFullscreenChange() {
     if (player && !player.paused && !player.ended) {
       keepPlaybackAfterFullscreen();
     }
-    resumePlaybackAfterFullscreen();
+    resumePlaybackAfterFullscreen(fullscreenPlaybackResumeUntil);
   }
 
-  function resumePlaybackAfterFullscreen() {
-    if (Date.now() > fullscreenPlaybackResumeUntil) return;
+  function resumePlaybackAfterFullscreen(resumeToken) {
+    if (!resumeToken || resumeToken !== fullscreenPlaybackResumeUntil) return;
+    if (Date.now() > resumeToken) return;
     if (!player || player.ended || !player.paused) return;
     playMedia();
   }
