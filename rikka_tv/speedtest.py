@@ -133,7 +133,8 @@ def measure_stream(url: str, timeout: float, sample_bytes: int) -> dict[str, Any
         height = 0
         bandwidth = 0
         if ".m3u8" in url.lower():
-            target_url, height, bandwidth = _resolve_m3u8_media(url, timeout)
+            target_urls, height, bandwidth = _resolve_m3u8_media_samples(url, timeout, sample_bytes)
+            return _download_probe_samples(target_urls, timeout, sample_bytes, height, bandwidth)
         return _download_probe(target_url, timeout, sample_bytes, height, bandwidth)
     except Exception as exc:
         return _fail(_friendly_error(exc))
@@ -172,6 +173,44 @@ def _resolve_m3u8_media(url: str, timeout: float, depth: int = 0) -> tuple[str, 
     raise ValueError("没有找到可测速的媒体分片")
 
 
+def _resolve_m3u8_media_samples(url: str, timeout: float, sample_bytes: int, depth: int = 0) -> tuple[list[str], int, int]:
+    if depth > 2:
+        raise ValueError("m3u8 嵌套过深")
+    response = requests.get(url, headers=HEADERS, timeout=(timeout, timeout))
+    response.raise_for_status()
+    text = response.text
+    base = url.rsplit("/", 1)[0] + "/"
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+    variants = []
+    for index, line in enumerate(lines):
+        if line.startswith("#EXT-X-STREAM-INF") and index + 1 < len(lines):
+            next_line = lines[index + 1]
+            if next_line.startswith("#"):
+                continue
+            height = _parse_height(line)
+            bandwidth = _parse_int_attr(line, "BANDWIDTH")
+            variants.append((height, bandwidth, urljoin(base, next_line)))
+    if variants:
+        height, bandwidth, variant_url = sorted(variants, key=lambda item: (item[0], item[1]), reverse=True)[0]
+        media_urls, media_height, media_bandwidth = _resolve_m3u8_media_samples(variant_url, timeout, sample_bytes, depth + 1)
+        return media_urls, media_height or height, media_bandwidth or bandwidth
+
+    urls = []
+    for line in lines:
+        if line.startswith("#"):
+            continue
+        absolute = urljoin(base, line)
+        if ".m3u8" in absolute.lower():
+            return _resolve_m3u8_media_samples(absolute, timeout, sample_bytes, depth + 1)
+        urls.append(absolute)
+        if len(urls) >= 4:
+            break
+    if urls:
+        return urls, 0, 0
+    raise ValueError("没有找到可测速的媒体分片")
+
+
 def _download_probe(url: str, timeout: float, sample_bytes: int, height: int, bandwidth: int) -> dict[str, Any]:
     headers = {**HEADERS, "Range": f"bytes=0-{max(sample_bytes - 1, 0)}"}
     started = time.perf_counter()
@@ -191,6 +230,42 @@ def _download_probe(url: str, timeout: float, sample_bytes: int, height: int, ba
         "ok": True,
         "error": "",
         "tested_url": url,
+        "height": height,
+        "bandwidth": bandwidth,
+        "quality": _quality_label(height),
+        "latency_ms": latency_ms,
+        "speed_kbps": round(speed_kbps, 1),
+        "speed_label": _speed_label(speed_kbps),
+        "score": 0,
+    }
+
+
+def _download_probe_samples(urls: list[str], timeout: float, sample_bytes: int, height: int, bandwidth: int) -> dict[str, Any]:
+    headers = {**HEADERS, "Range": f"bytes=0-{max(sample_bytes - 1, 0)}"}
+    started = time.perf_counter()
+    latency_ms = 0
+    total = 0
+    tested_urls = []
+    for url in urls:
+        tested_urls.append(url)
+        with requests.get(url, headers=headers, stream=True, timeout=(timeout, timeout)) as response:
+            response.raise_for_status()
+            if not latency_ms:
+                latency_ms = int((time.perf_counter() - started) * 1000)
+            for chunk in response.iter_content(chunk_size=64 * 1024):
+                if not chunk:
+                    continue
+                total += len(chunk)
+                if total >= sample_bytes:
+                    break
+        if total >= sample_bytes:
+            break
+    elapsed = max(time.perf_counter() - started, 0.001)
+    speed_kbps = (total / 1024) / elapsed
+    return {
+        "ok": True,
+        "error": "",
+        "tested_url": tested_urls[0] if len(tested_urls) == 1 else ",".join(tested_urls),
         "height": height,
         "bandwidth": bandwidth,
         "quality": _quality_label(height),

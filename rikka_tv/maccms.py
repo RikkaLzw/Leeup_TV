@@ -157,7 +157,7 @@ class MacCMSClient:
                 pass
 
         if title:
-            payload = self.search_all(title, selected_sources=selected_sources, max_page=search_max_page)
+            payload = self._search_all_title_variants(title, selected_sources=selected_sources, max_page=search_max_page)
             normalized_query = _normalize_title(title)
             shortlist = []
             for item in payload["results"]:
@@ -224,6 +224,32 @@ class MacCMSClient:
             return f"{api}?ac=videolist&wd={encoded}"
         return f"{api}?ac=videolist&wd={encoded}&pg={page}"
 
+    def _search_all_title_variants(
+        self,
+        query: str,
+        selected_sources: list[str] | None = None,
+        max_page: int | None = None,
+    ) -> dict[str, Any]:
+        results: list[dict[str, Any]] = []
+        failed: list[dict[str, str]] = []
+        seen: set[tuple[str, str]] = set()
+        seen_failed: set[str] = set()
+        for variant in _title_query_variants(query):
+            payload = self.search_all(variant, selected_sources=selected_sources, max_page=max_page)
+            for item in payload.get("results") or []:
+                key = (str(item.get("source") or ""), str(item.get("id") or ""))
+                if key in seen:
+                    continue
+                seen.add(key)
+                results.append(item)
+            for item in payload.get("failed") or []:
+                key = str(item.get("key") or item.get("name") or "")
+                if key in seen_failed:
+                    continue
+                seen_failed.add(key)
+                failed.append(item)
+        return {"results": results, "failed": failed}
+
     def _get_payload(self, url: str) -> dict[str, Any]:
         response = requests.get(url, headers=HEADERS, timeout=(5, 12))
         response.raise_for_status()
@@ -241,7 +267,8 @@ class MacCMSClient:
 
     def _search_cache_key(self, query: str, sources: list[dict[str, Any]], max_page: int) -> str:
         source_keys = ",".join(sorted(str(source.get("key") or "") for source in sources))
-        return f"{_normalize_title(query)}|{max_page}|{source_keys}"
+        raw_query = str(query or "").strip().lower()
+        return f"v2|{raw_query}|{_normalize_title(query)}|{max_page}|{source_keys}"
 
     def _get_search_cache(self, cache_key: str) -> dict[str, Any] | None:
         try:
@@ -642,6 +669,20 @@ def _normalize_title(value: str) -> str:
     value = value.lower()
     value = re.sub(r"[\s\-_·:：,，.。!！?？()\[\]（）【】]+", "", value)
     return value
+
+
+def _title_query_variants(value: str) -> list[str]:
+    original = str(value or "").strip()
+    compact = re.sub(r"\s+", "", original)
+    spaced_season = _space_title_season(compact)
+    return list(dict.fromkeys(item for item in (original, compact, spaced_season) if item))
+
+
+def _space_title_season(value: str) -> str:
+    match = re.match(r"^(.+?)(第[0-9一二三四五六七八九十百千万零〇两]+季)$", value or "")
+    if not match:
+        return ""
+    return f"{match.group(1)} {match.group(2)}"
 
 
 def _canonical_api_url(api: str) -> str:

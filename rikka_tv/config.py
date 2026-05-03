@@ -58,6 +58,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "skip_outro_enabled": False,
         "skip_outro_seconds": 0,
         "hls_proxy_enabled": True,
+        "hls_proxy_bypass_hosts": [
+            "bfikuncdn.com",
+            "kkzycdn.com",
+            "ikuncdnfb.com",
+        ],
         "hls_ad_filter_enabled": True,
         "hls_proxy_timeout_seconds": 12,
         "hls_proxy_max_playlist_bytes": 2097152,

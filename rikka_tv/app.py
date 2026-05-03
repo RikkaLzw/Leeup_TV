@@ -431,6 +431,7 @@ def create_app() -> FastAPI:
                 "skipOutroEnabled": bool(player_cfg.get("skip_outro_enabled")),
                 "skipOutroSeconds": int(player_cfg.get("skip_outro_seconds") or 0),
                 "hlsProxyEnabled": bool(player_cfg.get("hls_proxy_enabled", True)),
+                "hlsProxyBypassHosts": _string_list(player_cfg.get("hls_proxy_bypass_hosts")),
                 "hlsAdFilterEnabled": bool(player_cfg.get("hls_ad_filter_enabled", True)),
             },
             show_mobile_nav=True,
@@ -554,7 +555,16 @@ def create_app() -> FastAPI:
                 expected_kind=payload.kind,
             )
             prefer_douban_posters(candidates, cfg)
-            return {"best": None, "candidates": _prepare_browser_test_candidates(candidates, payload.episode)}
+            prepared = _prepare_browser_test_candidates(candidates, payload.episode)
+            return {
+                "best": None,
+                "candidates": prepared,
+                "meta": {
+                    "configured_sources": len(video_client.available_sources()),
+                    "matched_count": len(candidates),
+                    "prepared_count": len(prepared),
+                },
+            }
         except Exception as exc:
             LOGGER.exception(
                 "Prefer candidates failed: title=%r source=%s id=%s episode=%s",
@@ -1072,6 +1082,12 @@ def _config_float(config: dict[str, Any], key: str, default: float) -> float:
         return float(config.get(key) if config.get(key) is not None else default)
     except (TypeError, ValueError):
         return default
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item or "").strip() for item in value if str(item or "").strip()]
 
 
 def _save_resolution_status(cache_key: str, source: str, status: str) -> None:

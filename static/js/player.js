@@ -18,8 +18,12 @@
   let activePlaybackKey = "";
   let introSkippedKey = "";
   let outroSkippedKey = "";
+  let autoSwitchAllowed = true;
   let playerOptions = loadPlayerOptions();
   const hlsProxyEnabled = Boolean(cfg.playerOptions?.hlsProxyEnabled);
+  const hlsProxyBypassHosts = Array.isArray(cfg.playerOptions?.hlsProxyBypassHosts)
+    ? cfg.playerOptions.hlsProxyBypassHosts.map((host) => String(host || "").trim().toLowerCase()).filter(Boolean)
+    : [];
 
   const playerContainer = document.getElementById("player");
   const playerOverlay = document.getElementById("playerOverlay");
@@ -278,7 +282,9 @@
     clearLoadTimer();
     loadTimer = window.setTimeout(() => {
       setPlayerOverlay("当前源加载较慢，可点击测速换源");
-      tryNextTestedCandidate();
+      if (autoSwitchAllowed) {
+        tryNextTestedCandidate();
+      }
     }, 9000);
     const isHls = isHlsUrl(url);
     const finalUrl = isHls ? playbackHlsUrl(url) : url;
@@ -416,6 +422,7 @@
 
   function applyCandidate(candidate, autoPlay) {
     const handoffTime = currentPlaybackTime();
+    autoSwitchAllowed = Boolean(autoPlay);
     if (handoffTime > 1) saveProgress();
     detail = candidate;
     currentSource = candidate.source;
@@ -570,8 +577,19 @@
 
   function playbackHlsUrl(url) {
     const value = String(url || "");
-    if (!hlsProxyEnabled || !isHlsUrl(value) || value.startsWith("/hls-proxy?")) return value;
+    if (!hlsProxyEnabled || !isHlsUrl(value) || value.startsWith("/hls-proxy?") || shouldBypassHlsProxy(value)) return value;
     return `/hls-proxy?url=${encodeURIComponent(value)}`;
+  }
+
+  function shouldBypassHlsProxy(url) {
+    if (!hlsProxyBypassHosts.length) return false;
+    try {
+      const parsed = new URL(url, window.location.origin);
+      const hostname = parsed.hostname.toLowerCase();
+      return hlsProxyBypassHosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+    } catch {
+      return false;
+    }
   }
 
   function maybeSkipOpening() {
@@ -919,7 +937,7 @@
     const originalText = speedTestButton.textContent;
     speedTestButton.disabled = true;
     speedTestButton.textContent = "测速中";
-    setStatus("正在全量测速");
+    setStatus("正在匹配可用候选源");
     try {
       const res = await fetch("/api/prefer", {
         method: "POST",
@@ -935,6 +953,9 @@
       });
       const data = await readJsonResponse(res, "测速候选源获取失败");
       let candidates = data.candidates || [];
+      const meta = data.meta || {};
+      const total = Number(meta.prepared_count || candidates.length || 0);
+      setStatus(total ? `找到 ${total} 个可用候选，正在测速` : "没有匹配到可用候选源");
       candidateList.__candidates = candidates;
       renderCandidates(candidates);
       candidates = await testCandidatesInBrowser(candidates);
@@ -946,6 +967,7 @@
       if (best) {
         setStatus(`测速完成：推荐 ${best.source_name}`);
         if (player.paused && player.currentTime < 1 && `${best.source}+${best.id}` !== `${currentSource}+${currentId}`) {
+          autoSwitchAllowed = true;
           applyCandidate(best, true);
         }
       } else {
@@ -1019,6 +1041,11 @@
       let resolved = false;
       let metadataReady = false;
       let speedReady = false;
+      let probeStartedAt = 0;
+      let probeBytes = 0;
+      let probeFragments = 0;
+      const minProbeBytes = 384 * 1024;
+      const maxProbeFragments = 4;
       const pingStart = performance.now();
       fetch(url, { method: "HEAD", mode: "no-cors" })
         .then(() => { latencyMs = Math.round(performance.now() - pingStart); })
@@ -1058,14 +1085,19 @@
         const stats = data?.frag?.stats || data?.part?.stats || data?.stats || {};
         const loading = stats.loading || {};
         const loadStart = Number(loading.start || 0);
-        const loadEnd = Number(loading.end || 0);
-        const perfLoadTime = fragStart ? performance.now() - fragStart : 0;
-        const statsLoadTime = loadStart > 0 && loadEnd > loadStart ? loadEnd - loadStart : 0;
-        const loadTime = Math.max(perfLoadTime || statsLoadTime, 1);
         const payloadSize = Number(data?.payload?.byteLength || data?.payload?.length || 0);
         const size = Number(stats.loaded || stats.total || payloadSize || 0);
         if (size > 0) {
-          speedKbps = (size / 1024) / (loadTime / 1000);
+          if (!probeStartedAt) {
+            probeStartedAt = fragStart || performance.now();
+          }
+          probeBytes += size;
+          probeFragments += 1;
+          if (probeBytes < minProbeBytes && probeFragments < maxProbeFragments) {
+            return;
+          }
+          const loadTime = Math.max(performance.now() - probeStartedAt, 1);
+          speedKbps = (probeBytes / 1024) / (loadTime / 1000);
           if (loading.first && loadStart && !latencyMs) {
             latencyMs = Math.max(Math.round(Number(loading.first) - loadStart), 0);
           }
