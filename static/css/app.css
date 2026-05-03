@@ -1077,7 +1077,8 @@ input::placeholder {
   font-weight: 800;
 }
 
-.cast-button[hidden] {
+.cast-button[hidden],
+.cast-panel-button[hidden] {
   display: none;
 }
 
@@ -1096,6 +1097,10 @@ input::placeholder {
   width: 18px;
   height: 18px;
   fill: currentColor;
+}
+
+.cast-panel-button {
+  display: none;
 }
 
 .video-shell video,
@@ -1637,8 +1642,28 @@ code {
   .cast-button {
     top: 10px;
     right: 10px;
+    z-index: 30;
     min-height: 34px;
     padding: 7px 10px;
+  }
+
+  .cast-panel-button {
+    display: grid;
+    place-items: center;
+    min-height: 42px;
+    margin-bottom: 10px;
+    color: #fff;
+    background: rgba(138, 219, 210, 0.16);
+    border: 1px solid rgba(215, 255, 250, 0.28);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 800;
+  }
+
+  .cast-panel-button.unsupported {
+    color: rgba(255, 255, 255, 0.58);
+    background: rgba(246, 250, 255, 0.06);
+    border-color: var(--line);
   }
 
   .player-sidebar {

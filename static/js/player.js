@@ -32,6 +32,7 @@
   const episodeCount = document.getElementById("episodeCount");
   const speedTestButton = document.getElementById("speedTestButton");
   const castButton = document.getElementById("castButton");
+  const castPanelButton = document.getElementById("castPanelButton");
   const mobileTabs = Array.from(document.querySelectorAll("[data-mobile-panel]"));
   const preferPanel = document.querySelector(".prefer-panel");
   const episodePanel = document.querySelector(".episode-panel");
@@ -118,9 +119,10 @@
   }
 
   function setupCastButton() {
-    if (!castButton || !player) return;
+    if (!player || (!castButton && !castPanelButton)) return;
     updateCastButton();
-    castButton.addEventListener("click", startCasting);
+    castButton?.addEventListener("click", startCasting);
+    castPanelButton?.addEventListener("click", startCasting);
     if (player.remote) {
       player.remote.addEventListener("connect", () => updateCastButton("已投屏"));
       player.remote.addEventListener("disconnect", () => updateCastButton());
@@ -134,13 +136,22 @@
   }
 
   function updateCastButton(label) {
-    if (!castButton || !player) return;
+    if (!player) return;
     const supported = canUseAirPlay() || canUseRemotePlayback();
-    castButton.hidden = false;
-    castButton.classList.toggle("unsupported", !supported);
-    castButton.setAttribute("aria-disabled", supported ? "false" : "true");
-    castButton.title = supported ? "投屏到可用设备" : "当前浏览器或设备不支持网页投屏";
-    castButton.querySelector("span").textContent = label || (supported ? "投屏" : "不可投屏");
+    const text = label || (supported ? "投屏" : "不可投屏");
+    [castButton, castPanelButton].forEach((button) => {
+      if (!button) return;
+      button.hidden = false;
+      button.classList.toggle("unsupported", !supported);
+      button.setAttribute("aria-disabled", supported ? "false" : "true");
+      button.title = supported ? "投屏到可用设备" : "当前浏览器或设备不支持网页投屏";
+      const labelNode = button.querySelector("span");
+      if (labelNode) {
+        labelNode.textContent = text;
+      } else {
+        button.textContent = text;
+      }
+    });
   }
 
   function canUseAirPlay() {
