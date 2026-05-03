@@ -137,7 +137,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title=config.get("site", {}).get("name", "MewkoTV"))
     app.add_middleware(
         ProxyHeadersMiddleware,
-        trusted_hosts=config.get("proxy", {}).get("trusted_hosts", "127.0.0.1"),
+        trusted_hosts=config.get("proxy", {}).get("trusted_hosts", "*"),
     )
     app.add_middleware(
         SessionMiddleware,
