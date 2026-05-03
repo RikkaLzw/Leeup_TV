@@ -54,7 +54,7 @@
         type: "",
         autoplay: false,
         setting: true,
-        hotkey: true,
+        hotkey: false,
         pip: true,
         fullscreen: true,
         fullscreenWeb: true,
@@ -641,6 +641,60 @@
     playerContainer.addEventListener("mousemove", wakeDesktopPlayerControls, true);
   }
 
+  function setupDesktopKeyboardControls() {
+    document.addEventListener("keydown", handleDesktopKeyboardControl, true);
+  }
+
+  function handleDesktopKeyboardControl(event) {
+    if (!shouldHandleDesktopKeyboard(event)) return;
+    const key = event.key;
+    if (![" ", "Spacebar", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(key)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (key === " " || key === "Spacebar") {
+      togglePlayback();
+      return;
+    }
+    if (key === "ArrowLeft") {
+      seekBy(-5);
+      return;
+    }
+    if (key === "ArrowRight") {
+      seekBy(5);
+      return;
+    }
+    if (key === "ArrowUp") {
+      changeVolume(0.05);
+      return;
+    }
+    if (key === "ArrowDown") {
+      changeVolume(-0.05);
+    }
+  }
+
+  function shouldHandleDesktopKeyboard(event) {
+    if (!player || isMobileViewport()) return false;
+    if (event.altKey || event.ctrlKey || event.metaKey) return false;
+    if (isEditableTarget(event.target)) return false;
+    if (isPlayerMenuTarget(event.target)) return false;
+    return document.body.contains(playerContainer);
+  }
+
+  function isEditableTarget(target) {
+    if (!(target instanceof Element)) return false;
+    const tag = target.tagName.toLowerCase();
+    return Boolean(
+      target.closest("input, textarea, select, [contenteditable='true'], [contenteditable='']")
+      || tag === "button"
+      || tag === "a"
+    );
+  }
+
+  function isPlayerMenuTarget(target) {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest(".art-settings, .art-contextmenus, .settings-menu, .about-modal, .notice-modal"));
+  }
+
   function wakeDesktopPlayerControls(event) {
     if (!art || isMobileViewport()) return;
     if (!(event.target instanceof Element) || !event.target.closest(".art-video-player")) return;
@@ -702,6 +756,32 @@
       playMedia();
     } else {
       player.pause();
+    }
+  }
+
+  function seekBy(seconds) {
+    if (!player || !Number.isFinite(player.duration)) return;
+    const nextTime = Math.min(Math.max(Number(player.currentTime || 0) + seconds, 0), Math.max(player.duration - 0.2, 0));
+    player.currentTime = nextTime;
+    showPlayerNotice(seconds > 0 ? "快进 5s" : "后退 5s");
+  }
+
+  function changeVolume(delta) {
+    if (!player) return;
+    const nextVolume = Math.min(Math.max(Number(player.volume || 0) + delta, 0), 1);
+    player.volume = nextVolume;
+    player.muted = nextVolume <= 0;
+    const label = Math.round(nextVolume * 100);
+    showPlayerNotice(`音量 ${label}%`);
+    syncArtVolume(nextVolume);
+  }
+
+  function syncArtVolume(volume) {
+    if (!art || !("volume" in art)) return;
+    try {
+      art.volume = volume;
+    } catch {
+      // The native video volume has already been updated.
     }
   }
 
@@ -1220,6 +1300,7 @@
   });
   setupLongPressFastForward();
   setupDesktopClickPlayback();
+  setupDesktopKeyboardControls();
   player?.addEventListener("pause", saveProgress);
   player?.addEventListener("loadstart", () => setPlayerOverlay("正在加载视频"));
   player?.addEventListener("loadedmetadata", () => {
