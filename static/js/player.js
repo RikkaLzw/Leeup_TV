@@ -156,6 +156,7 @@
     if (!player) return;
     if (canUseAirPlay()) {
       try {
+        prepareNativeAirPlaySource();
         player.webkitShowPlaybackTargetPicker();
         showPlayerNotice("请选择 AirPlay 设备");
         return;
@@ -165,6 +166,20 @@
       }
     }
     showPlayerNotice("当前只支持 Safari / 苹果设备 AirPlay");
+  }
+
+  function prepareNativeAirPlaySource() {
+    const sourceUrl = currentEpisodeUrl();
+    if (!isHlsUrl(sourceUrl)) return;
+    if (hls) {
+      hls.destroy();
+      hls = null;
+    }
+    if (art) {
+      art.type = "";
+    }
+    player.src = sourceUrl;
+    player.load();
   }
 
   function setStatus(text) {
@@ -547,6 +562,10 @@
 
   function isHlsUrl(url) {
     return /\.m3u8(?:[?#]|$)/i.test(String(url || ""));
+  }
+
+  function currentEpisodeUrl() {
+    return String((detail.episodes || [])[currentEpisode] || "");
   }
 
   function playbackHlsUrl(url) {
