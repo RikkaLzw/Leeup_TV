@@ -732,7 +732,15 @@
     clearDesktopClickTimer();
     const shouldResume = Boolean(player && !player.paused && !player.ended);
     toggleFullscreen();
+    blurActivePlayerControl();
     if (shouldResume) keepPlaybackAfterFullscreen();
+  }
+
+  function blurActivePlayerControl() {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && playerContainer?.contains(active)) {
+      active.blur();
+    }
   }
 
   function emitArtPlayerEvent(name, event) {
@@ -811,8 +819,7 @@
   }
 
   function handleFullscreenChange() {
-    const wasRecentlyPlaying = Date.now() - lastPlaybackActiveAt < 2500;
-    if (player && (!player.paused || wasRecentlyPlaying) && !player.ended) {
+    if (player && !player.paused && !player.ended) {
       keepPlaybackAfterFullscreen();
     }
     resumePlaybackAfterFullscreen();
