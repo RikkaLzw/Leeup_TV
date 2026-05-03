@@ -8,6 +8,9 @@
   let art = null;
   let loadTimer = null;
   let longPressTimer = null;
+  let desktopClickTimer = null;
+  let fullscreenPlaybackResumeUntil = 0;
+  let lastPlaybackActiveAt = 0;
   let longPressActive = false;
   let longPressPointerId = null;
   let savedPlaybackRate = 1;
@@ -40,6 +43,7 @@
     Artplayer.PLAYBACK_RATE = [0.5, 1, 1.25, 1.5, 2, 3];
     Artplayer.FAST_FORWARD_VALUE = 3;
     Artplayer.FAST_FORWARD_TIME = 700;
+    Artplayer.DBCLICK_FULLSCREEN = false;
   }
 
   function createPlayer() {
@@ -376,6 +380,7 @@
   }
 
   function playMedia() {
+    lastPlaybackActiveAt = Date.now();
     if (art) {
       const promise = art.play();
       if (promise?.catch) promise.catch(() => {});
@@ -607,20 +612,88 @@
   function isPlayerControlTarget(target) {
     if (!(target instanceof Element)) return false;
     return Boolean(target.closest(
-      ".art-bottom, .art-controls, .art-progress, .art-settings, .art-contextmenus"
+      ".art-bottom, .art-controls, .art-progress, .art-settings, .art-contextmenus, .art-info, .art-layer"
     ));
+  }
+
+  function isPlayerSurfaceTarget(target) {
+    if (!(target instanceof Element)) return false;
+    if (isPlayerControlTarget(target)) return false;
+    return Boolean(target.closest(".art-video, .art-video-player, .art-mask, .art-state, .art-poster"));
+  }
+
+  function shouldHandleDesktopPointer(event) {
+    if (!art || isMobileViewport()) return false;
+    if (event.button !== undefined && event.button !== 0) return false;
+    return isPlayerSurfaceTarget(event.target);
+  }
+
+  function captureDesktopPlayerEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
   }
 
   function setupDesktopClickPlayback() {
     if (!playerContainer) return;
-    playerContainer.addEventListener("click", (event) => {
-      if (event.detail > 1 || isMobileViewport()) return;
-      if (isPlayerControlTarget(event.target)) return;
-      if (!(event.target instanceof Element)) return;
-      if (event.target.closest(".art-video")) return;
-      if (!event.target.closest(".art-video-player, .art-mask, .art-state, .art-poster")) return;
+    playerContainer.addEventListener("click", handleDesktopPlayerClick, true);
+    playerContainer.addEventListener("dblclick", handleDesktopPlayerDoubleClick, true);
+    playerContainer.addEventListener("mousemove", wakeDesktopPlayerControls, true);
+  }
+
+  function wakeDesktopPlayerControls(event) {
+    if (!art || isMobileViewport()) return;
+    if (!(event.target instanceof Element) || !event.target.closest(".art-video-player")) return;
+    const playerRoot = playerContainer?.querySelector(".art-video-player");
+    if (playerRoot) {
+      playerRoot.classList.remove("art-hide-cursor");
+      playerRoot.classList.add("art-hover");
+    }
+    try {
+      if (art.controls) art.controls.show = true;
+    } catch {
+      // ArtPlayer control internals can vary by version.
+    }
+  }
+
+  function handleDesktopPlayerClick(event) {
+    if (!shouldHandleDesktopPointer(event)) return;
+    captureDesktopPlayerEvent(event);
+    if (event.detail > 1) {
+      clearDesktopClickTimer();
+      return;
+    }
+    emitArtPlayerEvent("click", event);
+    clearDesktopClickTimer();
+    desktopClickTimer = window.setTimeout(() => {
+      desktopClickTimer = null;
       togglePlayback();
-    });
+    }, 260);
+  }
+
+  function handleDesktopPlayerDoubleClick(event) {
+    if (!shouldHandleDesktopPointer(event)) return;
+    captureDesktopPlayerEvent(event);
+    emitArtPlayerEvent("dblclick", event);
+    clearDesktopClickTimer();
+    const shouldResume = Boolean(player && !player.paused && !player.ended);
+    toggleFullscreen();
+    if (shouldResume) keepPlaybackAfterFullscreen();
+  }
+
+  function emitArtPlayerEvent(name, event) {
+    if (!art || typeof art.emit !== "function") return;
+    try {
+      art.emit(name, event);
+    } catch {
+      // Custom pointer handling should not fail playback if ArtPlayer changes internals.
+    }
+  }
+
+  function clearDesktopClickTimer() {
+    if (!desktopClickTimer) return;
+    window.clearTimeout(desktopClickTimer);
+    desktopClickTimer = null;
   }
 
   function togglePlayback() {
@@ -629,6 +702,51 @@
       playMedia();
     } else {
       player.pause();
+    }
+  }
+
+  function toggleFullscreen() {
+    if (art && "fullscreen" in art) {
+      try {
+        art.fullscreen = !art.fullscreen;
+        return;
+      } catch {
+        // Fall through to the browser fullscreen API.
+      }
+    }
+    const fullscreenTarget = playerContainer?.querySelector(".art-video-player") || playerContainer;
+    if (!fullscreenTarget) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    } else {
+      fullscreenTarget.requestFullscreen?.();
+    }
+  }
+
+  function keepPlaybackAfterFullscreen() {
+    fullscreenPlaybackResumeUntil = Date.now() + 1600;
+    [60, 220, 520, 1000, 1500].forEach((delay) => {
+      window.setTimeout(resumePlaybackAfterFullscreen, delay);
+    });
+  }
+
+  function handleFullscreenChange() {
+    const wasRecentlyPlaying = Date.now() - lastPlaybackActiveAt < 2500;
+    if (player && (!player.paused || wasRecentlyPlaying) && !player.ended) {
+      keepPlaybackAfterFullscreen();
+    }
+    resumePlaybackAfterFullscreen();
+  }
+
+  function resumePlaybackAfterFullscreen() {
+    if (Date.now() > fullscreenPlaybackResumeUntil) return;
+    if (!player || player.ended || !player.paused) return;
+    playMedia();
+  }
+
+  function notePlaybackActive() {
+    if (player && !player.paused && !player.ended) {
+      lastPlaybackActiveAt = Date.now();
     }
   }
 
@@ -1108,9 +1226,11 @@
     maybeSkipOpening();
   });
   player?.addEventListener("timeupdate", () => {
+    notePlaybackActive();
     maybeSkipEnding();
   });
   player?.addEventListener("playing", () => {
+    notePlaybackActive();
     clearLoadTimer();
     setPlayerOverlay("", false);
   });
@@ -1119,9 +1239,13 @@
     setPlayerOverlay("", false);
   });
   player?.addEventListener("error", () => setPlayerOverlay("当前源加载失败，可点击测速换源"));
+  document.addEventListener("fullscreenchange", handleFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
   if (art) {
     art.on("pause", saveProgress);
+    art.on("fullscreen", handleFullscreenChange);
     art.on("video:playing", () => {
+      notePlaybackActive();
       clearLoadTimer();
       setPlayerOverlay("", false);
     });
