@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}{{ site.name or "LeeupTV" }}{% endblock %}</title>
+    <title>{% block title %}{{ site.name or "MewkoTV" }}{% endblock %}</title>
     <link rel="icon" href="{{ url_for('static', path='/icons/favicon.ico') }}?v={{ asset_version }}" sizes="any">
     <link rel="icon" href="{{ url_for('static', path='/icons/icon-192.png') }}?v={{ asset_version }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ url_for('static', path='/icons/apple-touch-icon.png') }}?v={{ asset_version }}">
@@ -20,7 +20,7 @@
         <span class="brand-mark" aria-hidden="true">
           <img src="{{ url_for('static', path='/icons/icon-192.png') }}?v={{ asset_version }}" alt="">
         </span>
-        <span>{{ site.name or "LeeupTV" }}</span>
+        <span>{{ site.name or "MewkoTV" }}</span>
       </a>
       <form class="top-search" action="{{ url_for('search') }}" method="get">
         <input type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
@@ -126,7 +126,7 @@
       <div class="about-backdrop" data-about-close></div>
       <section class="about-dialog" role="dialog" aria-modal="true" aria-labelledby="aboutDialogTitle">
         <div class="notice-dialog-header">
-          <h2 id="aboutDialogTitle">关于 {{ site.name or "LeeupTV" }}</h2>
+          <h2 id="aboutDialogTitle">关于 {{ site.name or "MewkoTV" }}</h2>
           <button class="icon-button" type="button" data-about-close aria-label="关闭">×</button>
         </div>
         <div class="about-dialog-body">

@@ -417,7 +417,7 @@
       skipOutroSeconds: normalizeSkipSeconds(cfg.playerOptions?.skipOutroSeconds || 0)
     };
     try {
-      const saved = JSON.parse(localStorage.getItem("leeuptv_player_options") || "{}");
+      const saved = JSON.parse(localStorage.getItem("mewkotv_player_options") || "{}");
       return {
         skipIntroEnabled: Boolean(saved.skipIntroEnabled ?? defaults.skipIntroEnabled),
         skipOutroEnabled: Boolean(saved.skipOutroEnabled ?? defaults.skipOutroEnabled),
@@ -431,7 +431,7 @@
 
   function savePlayerOptions() {
     try {
-      localStorage.setItem("leeuptv_player_options", JSON.stringify(playerOptions));
+      localStorage.setItem("mewkotv_player_options", JSON.stringify(playerOptions));
     } catch {
       // ignore local storage failures
     }

@@ -1,4 +1,4 @@
-# LeeupTV
+# MewkoTV
 
 一个用 Python + FastAPI + SQLite 写的轻量影视聚合站雏形，参考 MoonTV 的核心体验：多源搜索、详情页、在线播放、本地继续观看，以及多视频源测速优选。
 
@@ -34,7 +34,7 @@ python app.py
 如需关闭 `python app.py` 的热重载：
 
 ```powershell
-$env:LEEUPTV_RELOAD="0"; uv run python app.py
+$env:MEWKOTV_RELOAD="0"; uv run python app.py
 ```
 
 ## 配置视频源

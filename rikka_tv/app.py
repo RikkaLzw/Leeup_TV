@@ -119,7 +119,7 @@ def create_app() -> FastAPI:
     config = load_config()
     init_db(config)
 
-    app = FastAPI(title=config.get("site", {}).get("name", "LeeupTV"))
+    app = FastAPI(title=config.get("site", {}).get("name", "MewkoTV"))
     app.add_middleware(
         SessionMiddleware,
         secret_key=os.environ.get("RIKKA_SECRET_KEY", "rikka-tv-dev-secret"),

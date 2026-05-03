@@ -1,6 +1,6 @@
 {
   "site": {
-    "name": "LeeupTV",
+    "name": "MewkoTV",
     "announcement": "本站仅接入你有权使用的视频源，不存储任何视频文件，只提供搜索、记录和播放入口。",
     "disclaimer": "所有内容来自已配置的第三方接口，本站不上传、不制作、不保存视频；请遵守当地法律法规，仅用于学习交流。",
     "qq_group_url": "https://qm.qq.com/q/LFmzAHiqYQ"
@@ -372,10 +372,6 @@
       "api": "https://bfzyapi.com/api.php/provide/vod",
       "name": "暴风资源"
     },
-    "tyyszy": {
-      "api": "https://tyyszy.com/api.php/provide/vod",
-      "name": "天涯资源"
-    },
     "ffzy": {
       "api": "http://ffzy5.tv/api.php/provide/vod",
       "name": "非凡影视",
@@ -384,10 +380,6 @@
     "zy360": {
       "api": "https://360zy.com/api.php/provide/vod",
       "name": "360资源"
-    },
-    "maotaizy": {
-      "api": "https://caiji.maotaizy.cc/api.php/provide/vod",
-      "name": "茅台资源"
     },
     "wolong": {
       "api": "https://wolongzyw.com/api.php/provide/vod",
@@ -402,10 +394,6 @@
       "api": "https://dbzy.tv/api.php/provide/vod",
       "name": "豆瓣资源"
     },
-    "mozhua": {
-      "api": "https://mozhuazy.com/api.php/provide/vod",
-      "name": "魔爪资源"
-    },
     "mdzy": {
       "api": "https://www.mdzyapi.com/api.php/provide/vod",
       "name": "魔都资源"
@@ -413,10 +401,6 @@
     "zuid": {
       "api": "https://api.zuidapi.com/api.php/provide/vod",
       "name": "最大资源"
-    },
-    "yinghua": {
-      "api": "https://m3u8.apiyhzy.com/api.php/provide/vod",
-      "name": "樱花资源"
     },
     "wujin": {
       "api": "https://api.wujinapi.me/api.php/provide/vod",
@@ -483,11 +467,6 @@
       "api": "https://pz.v88.qzz.io/?url=https://api.ukuapi88.com/api.php/provide/vod",
       "detail": "https://www.ukuzy.com"
     },
-    "api.guangsuapi.com": {
-      "name": "🎬光速资源",
-      "api": "https://pz.v88.qzz.io/?url=https://api.guangsuapi.com/api.php/provide/vod",
-      "detail": "https://api.guangsuapi.com"
-    },
     "www.hongniuzy.com": {
       "name": "🎬红牛资源",
       "api": "https://pz.v88.qzz.io/?url=https://www.hongniuzy2.com/api.php/provide/vod",
@@ -502,6 +481,21 @@
       "name": "🎬如意资源",
       "api": "https://pz.v88.qzz.io/?url=https://cj.rycjapi.com/api.php/provide/vod",
       "detail": "https://www.ryzyw.com"
-    }
+    },
+    "mtzy.me": {
+      "name": "茅台资源",
+      "api": "https://caiji.maotaizy.cc/api.php/provide/vod/from/mtm3u8/at/josn/",
+      "detail": "mtzy.me"
+    },
+    "wsyzy": { 
+    "api":"https://api.wsyzy.net/api.php/provide/vod/?ac=list",
+    "name":"无水印资源",
+    "detail":"https://wsyzy.cc"
+    },
+    "www.heiliaozyapi.com": {
+      "name": "🎬黑料资源",
+      "api": "https://pz.v88.qzz.io/?url=https://www.heiliaozyapi.com/api.php/provide/vod/",
+      "detail": "https://www.heiliaozyapi.com"
+     }
   }
 }

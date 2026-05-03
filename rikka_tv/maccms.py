@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import logging
 import re
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
@@ -14,7 +15,7 @@ from .db import get_detail_cache, get_search_cache, save_detail_cache, save_sear
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "application/json,text/plain,*/*",
+    "Accept": "application/json,application/xml,text/xml,text/plain,*/*",
 }
 M3U8_RE = re.compile(r"https?://[^\"'\s]+?\.m3u8(?:\?[^\"'\s]*)?", re.I)
 LOGGER = logging.getLogger(__name__)
@@ -91,12 +92,12 @@ class MacCMSClient:
         results = []
         for page in range(1, max_page + 1):
             url = self._search_url(source["api"], query, page)
-            data = self._get_json(url)
+            data = self._get_payload(url)
             items = data.get("list") or []
             if not isinstance(items, list):
                 break
             results.extend(self._map_item(item, source) for item in items)
-            page_count = int(data.get("pagecount") or 1)
+            page_count = _safe_int(data.get("pagecount"), 1)
             if page >= page_count:
                 break
         return results
@@ -109,7 +110,7 @@ class MacCMSClient:
         if cached:
             return cached
         url = f"{source['api']}?ac=videolist&ids={quote(str(video_id))}"
-        data = self._get_json(url)
+        data = self._get_payload(url)
         items = data.get("list") or []
         if not items:
             if source.get("detail"):
@@ -223,10 +224,20 @@ class MacCMSClient:
             return f"{api}?ac=videolist&wd={encoded}"
         return f"{api}?ac=videolist&wd={encoded}&pg={page}"
 
-    def _get_json(self, url: str) -> dict[str, Any]:
+    def _get_payload(self, url: str) -> dict[str, Any]:
         response = requests.get(url, headers=HEADERS, timeout=(5, 12))
         response.raise_for_status()
-        return response.json()
+        try:
+            data = response.json()
+            if isinstance(data, dict):
+                return data
+            raise ValueError("JSON payload is not an object")
+        except ValueError as json_exc:
+            stripped = (response.text or "").lstrip("\ufeff\r\n\t ")
+            if not stripped.startswith("<"):
+                snippet = re.sub(r"\s+", " ", stripped[:120]).strip()
+                raise ValueError(f"采集接口返回非 JSON/XML 内容: {snippet}") from json_exc
+            return _parse_maccms_xml(response.content or stripped.encode("utf-8", errors="ignore"))
 
     def _search_cache_key(self, query: str, sources: list[dict[str, Any]], max_page: int) -> str:
         source_keys = ",".join(sorted(str(source.get("key") or "") for source in sources))
@@ -308,15 +319,75 @@ class MacCMSClient:
         }
 
 
+def _parse_maccms_xml(payload: bytes | str) -> dict[str, Any]:
+    root = ET.fromstring(payload)
+    list_node = root.find(".//list")
+    videos = root.findall(".//video")
+    if list_node is None:
+        list_node = root
+    return {
+        "code": 1,
+        "msg": "数据列表",
+        "page": _safe_int(list_node.get("page") if list_node is not None else None, 1),
+        "pagecount": _safe_int(list_node.get("pagecount") if list_node is not None else None, 1),
+        "limit": _safe_int(list_node.get("pagesize") if list_node is not None else None, len(videos) or 20),
+        "total": _safe_int(list_node.get("recordcount") if list_node is not None else None, len(videos)),
+        "list": [_xml_video_to_item(video) for video in videos],
+    }
+
+
+def _xml_video_to_item(video: ET.Element) -> dict[str, Any]:
+    type_name = _xml_child_text(video, "type", "type_name")
+    desc = _xml_child_text(video, "des", "content", "desc")
+    return {
+        "vod_id": _xml_child_text(video, "id", "vod_id"),
+        "vod_name": _xml_child_text(video, "name", "vod_name"),
+        "vod_pic": _xml_child_text(video, "pic", "vod_pic"),
+        "vod_class": type_name,
+        "vod_year": _xml_child_text(video, "year", "vod_year"),
+        "vod_content": desc,
+        "type_name": type_name,
+        "vod_douban_id": _xml_child_text(video, "douban_id", "vod_douban_id"),
+        "vod_play_url": _xml_play_url(video),
+    }
+
+
+def _xml_play_url(video: ET.Element) -> str:
+    playlists = []
+    for node in video.findall(".//dd"):
+        value = _xml_node_text(node)
+        if value:
+            playlists.append(value)
+    return "$$$".join(playlists)
+
+
+def _xml_child_text(node: ET.Element, *names: str) -> str:
+    for name in names:
+        child = node.find(name)
+        if child is not None:
+            value = _xml_node_text(child)
+            if value:
+                return value
+    return ""
+
+
+def _xml_node_text(node: ET.Element) -> str:
+    return html.unescape("".join(node.itertext())).strip()
+
+
 def parse_episodes(vod_play_url: str, fallback_content: str = "") -> tuple[list[str], list[str]]:
     best: tuple[int, list[str], list[str]] = (0, [], [])
     for playlist in (vod_play_url or "").split("$$$"):
         episodes = []
         titles = []
         for entry in playlist.split("#"):
-            if "$" not in entry:
+            entry = entry.strip()
+            if not entry:
                 continue
-            title, url = entry.split("$", 1)
+            if "$" in entry:
+                title, url = entry.split("$", 1)
+            else:
+                title, url = str(len(titles) + 1), entry
             url = url.strip()
             if _is_media_url(url):
                 episodes.append(url)
@@ -586,6 +657,13 @@ def _canonical_api_url(api: str) -> str:
 def _config_int(config: dict[str, Any], key: str, default: int) -> int:
     try:
         return int(config.get(key) or default)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
     except (TypeError, ValueError):
         return default
 
