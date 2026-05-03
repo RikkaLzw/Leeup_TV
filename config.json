@@ -517,11 +517,6 @@
       "api": "https://caiji.maotaizy.cc/api.php/provide/vod/from/mtm3u8/at/josn/",
       "detail": "mtzy.me"
     },
-    "wsyzy": { 
-    "api":"https://api.wsyzy.net/api.php/provide/vod/?ac=list",
-    "name":"无水印资源",
-    "detail":"https://wsyzy.cc"
-    },
     "www.heiliaozyapi.com": {
       "name": "🎬黑料资源",
       "api": "https://pz.v88.qzz.io/?url=https://www.heiliaozyapi.com/api.php/provide/vod/",
