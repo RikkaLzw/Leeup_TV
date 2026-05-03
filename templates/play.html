@@ -12,6 +12,15 @@
     <div class="player-main">
       <div class="video-shell">
         <div id="player" class="art-player"></div>
+        <button class="cast-button" id="castButton" type="button" hidden aria-label="投屏">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v8a2.5 2.5 0 0 1-2.5 2.5h-3a1 1 0 1 1 0-2h3a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v2a1 1 0 0 1-2 0v-2Z"/>
+            <path d="M3 17.5A3.5 3.5 0 0 1 6.5 21a1 1 0 1 0 0-2A1.5 1.5 0 0 0 5 17.5a1 1 0 1 0-2 0Z"/>
+            <path d="M3 13.5A7.5 7.5 0 0 1 10.5 21a1 1 0 1 0 0-2A5.5 5.5 0 0 0 5 13.5a1 1 0 1 0-2 0Z"/>
+            <path d="M4 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/>
+          </svg>
+          <span>投屏</span>
+        </button>
         <div class="player-loading-hint" id="playerLoadingHint" hidden>正在加载视频</div>
         <div class="player-gesture-hint" id="playerGestureHint" hidden>3x</div>
       </div>

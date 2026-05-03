@@ -31,6 +31,7 @@
   const episodeList = document.getElementById("episodeList");
   const episodeCount = document.getElementById("episodeCount");
   const speedTestButton = document.getElementById("speedTestButton");
+  const castButton = document.getElementById("castButton");
   const mobileTabs = Array.from(document.querySelectorAll("[data-mobile-panel]"));
   const preferPanel = document.querySelector(".prefer-panel");
   const episodePanel = document.querySelector(".episode-panel");
@@ -114,6 +115,66 @@
     video.preload = "metadata";
     playerContainer?.appendChild(video);
     return video;
+  }
+
+  function setupCastButton() {
+    if (!castButton || !player) return;
+    updateCastButton();
+    castButton.addEventListener("click", startCasting);
+    if (player.remote) {
+      player.remote.addEventListener("connect", () => updateCastButton("已投屏"));
+      player.remote.addEventListener("disconnect", () => updateCastButton());
+      try {
+        const availability = player.remote.watchAvailability?.(() => updateCastButton());
+        availability?.catch?.(() => updateCastButton());
+      } catch {
+        updateCastButton();
+      }
+    }
+  }
+
+  function updateCastButton(label) {
+    if (!castButton || !player) return;
+    const supported = canUseAirPlay() || canUseRemotePlayback();
+    castButton.hidden = false;
+    castButton.classList.toggle("unsupported", !supported);
+    castButton.setAttribute("aria-disabled", supported ? "false" : "true");
+    castButton.title = supported ? "投屏到可用设备" : "当前浏览器或设备不支持网页投屏";
+    castButton.querySelector("span").textContent = label || (supported ? "投屏" : "不可投屏");
+  }
+
+  function canUseAirPlay() {
+    return Boolean(player && typeof player.webkitShowPlaybackTargetPicker === "function");
+  }
+
+  function canUseRemotePlayback() {
+    return Boolean(player?.remote && typeof player.remote.prompt === "function");
+  }
+
+  async function startCasting() {
+    if (!player) return;
+    if (canUseAirPlay()) {
+      try {
+        player.webkitShowPlaybackTargetPicker();
+        showPlayerNotice("请选择投屏设备");
+        return;
+      } catch {
+        // Try Remote Playback next when AirPlay picker is unavailable at runtime.
+      }
+    }
+    if (canUseRemotePlayback()) {
+      try {
+        await player.remote.prompt();
+        showPlayerNotice("请选择投屏设备");
+        updateCastButton();
+        return;
+      } catch (error) {
+        const name = String(error?.name || "");
+        showPlayerNotice(name === "NotFoundError" ? "未找到可用投屏设备" : "投屏未启动");
+        return;
+      }
+    }
+    showPlayerNotice("当前浏览器或设备不支持投屏");
   }
 
   function setStatus(text) {
@@ -1309,6 +1370,7 @@
   }
 
   speedTestButton?.addEventListener("click", runPreference);
+  setupCastButton();
   mobileTabs.forEach((tab) => {
     tab.addEventListener("click", () => setMobilePanel(tab.dataset.mobilePanel || "episodes"));
   });
