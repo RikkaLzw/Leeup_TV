@@ -22,7 +22,7 @@
         </span>
         <span>{{ site.name or "MewkoTV" }}</span>
       </a>
-      <form class="top-search" action="{{ url_for('search') }}" method="get">
+      <form class="top-search" action="/search" method="get">
         <input type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
         <button type="submit">搜索</button>
       </form>
@@ -87,7 +87,7 @@
     </header>
 
     <div class="mobile-search-panel" id="mobileSearchPanel" hidden>
-      <form class="mobile-bottom-search" action="{{ url_for('search') }}" method="get">
+      <form class="mobile-bottom-search" action="/search" method="get">
         <input id="mobileSearchInput" type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
         <button type="submit">搜索</button>
       </form>

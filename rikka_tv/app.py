@@ -18,6 +18,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from jinja2 import pass_context
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -47,7 +48,16 @@ from .recommend import get_recommend_config, get_recommend_config_by_level, get_
 from .speedtest import prefer_best_source
 
 
+@pass_context
+def _relative_url_for(context: dict[str, Any], name: str, **path_params: Any) -> str:
+    request = context.get("request")
+    if not isinstance(request, Request):
+        return ""
+    return request.url_for(name, **path_params).path
+
+
 templates = Jinja2Templates(directory=str(ROOT_DIR / "templates"))
+templates.env.globals["url_for"] = _relative_url_for
 templates.env.globals["static_url"] = lambda path: _static_url(path)
 templates.env.filters["direct_poster"] = lambda value: _direct_poster_url(value)
 templates.env.filters["poster_src"] = lambda value: _poster_display_url(value)
