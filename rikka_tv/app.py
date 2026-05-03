@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from .config import ROOT_DIR, load_config
 from .db import (
@@ -35,12 +36,19 @@ from .db import (
     save_source_test_metrics,
 )
 from .douban import DoubanClient
+from .hls_proxy import HlsProxyForbidden
+from .hls_proxy import HlsProxyUpstreamError
+from .hls_proxy import decode_playlist
+from .hls_proxy import fetch_hls_playlist
+from .hls_proxy import filter_m3u8_playlist
+from .hls_proxy import looks_like_m3u8
 from .maccms import MacCMSClient
 from .recommend import get_recommend_config, get_recommend_config_by_level, get_recommend_items, get_recommend_sections
 from .speedtest import prefer_best_source
 
 
 templates = Jinja2Templates(directory=str(ROOT_DIR / "templates"))
+templates.env.globals["static_url"] = lambda path: _static_url(path)
 templates.env.filters["direct_poster"] = lambda value: _direct_poster_url(value)
 templates.env.filters["poster_src"] = lambda value: _poster_display_url(value)
 LOGGER = logging.getLogger(__name__)
@@ -77,6 +85,13 @@ def _replace_douban_image_host(url: str, host: str) -> str:
     if not parsed.netloc or not parsed.netloc.endswith("doubanio.com"):
         return url
     return urlunparse(parsed._replace(netloc=host))
+
+
+def _static_url(path: str) -> str:
+    value = str(path or "").strip()
+    if not value.startswith("/"):
+        value = f"/{value}"
+    return f"/static{value}"
 
 
 BROWSE_DEFAULT_RECOMMEND_KEYS = {
@@ -120,6 +135,10 @@ def create_app() -> FastAPI:
     init_db(config)
 
     app = FastAPI(title=config.get("site", {}).get("name", "MewkoTV"))
+    app.add_middleware(
+        ProxyHeadersMiddleware,
+        trusted_hosts=config.get("proxy", {}).get("trusted_hosts", "127.0.0.1"),
+    )
     app.add_middleware(
         SessionMiddleware,
         secret_key=os.environ.get("RIKKA_SECRET_KEY", "rikka-tv-dev-secret"),
@@ -392,6 +411,8 @@ def create_app() -> FastAPI:
                 "skipIntroSeconds": int(player_cfg.get("skip_intro_seconds") or 0),
                 "skipOutroEnabled": bool(player_cfg.get("skip_outro_enabled")),
                 "skipOutroSeconds": int(player_cfg.get("skip_outro_seconds") or 0),
+                "hlsProxyEnabled": bool(player_cfg.get("hls_proxy_enabled", True)),
+                "hlsAdFilterEnabled": bool(player_cfg.get("hls_ad_filter_enabled", True)),
             },
             show_mobile_nav=True,
         )
@@ -467,6 +488,31 @@ def create_app() -> FastAPI:
             upstream.content,
             media_type=upstream.headers.get("Content-Type", "image/jpeg"),
             headers={"Cache-Control": "public, max-age=86400"},
+        )
+
+    @app.get("/hls-proxy", name="hls_proxy")
+    async def hls_proxy(url: str):
+        player_cfg = (load_config().get("player") or {})
+        if not bool(player_cfg.get("hls_proxy_enabled", True)):
+            raise HTTPException(status_code=404)
+        try:
+            upstream = fetch_hls_playlist(unquote(url), player_cfg)
+            playlist_text = decode_playlist(upstream.content)
+            if not looks_like_m3u8(playlist_text, upstream.content_type):
+                raise HlsProxyUpstreamError("上游返回的不是 m3u8 播放列表")
+            filtered = filter_m3u8_playlist(playlist_text, upstream.final_url, player_cfg)
+        except HlsProxyForbidden as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except HlsProxyUpstreamError as exc:
+            LOGGER.warning("HLS proxy failed: %s", exc)
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return Response(
+            filtered.text,
+            media_type="application/vnd.apple.mpegurl",
+            headers={
+                "Cache-Control": "no-store",
+                "X-HLS-Filtered-Segments": str(filtered.removed_segments),
+            },
         )
 
     @app.post("/api/prefer", name="api_prefer")

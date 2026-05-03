@@ -16,6 +16,7 @@
   let introSkippedKey = "";
   let outroSkippedKey = "";
   let playerOptions = loadPlayerOptions();
+  const hlsProxyEnabled = Boolean(cfg.playerOptions?.hlsProxyEnabled);
 
   const playerContainer = document.getElementById("player");
   const playerOverlay = document.getElementById("playerOverlay");
@@ -75,7 +76,7 @@
             }
             if (window.Hls && Hls.isSupported()) {
               hls = new Hls({ enableWorker: true, fragLoadingTimeOut: 8000, manifestLoadingTimeOut: 8000 });
-              hls.loadSource(url);
+              hls.loadSource(playbackHlsUrl(url));
               hls.attachMedia(video);
               hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
                 resumeTime(video.__rikkaResumeTime || 0);
@@ -163,14 +164,15 @@
       setPlayerOverlay("当前源加载较慢，可点击测速换源");
       tryNextTestedCandidate();
     }, 9000);
-    const finalUrl = url;
+    const isHls = isHlsUrl(url);
+    const finalUrl = isHls ? playbackHlsUrl(url) : url;
     if (hls) {
       hls.destroy();
       hls = null;
     }
     if (art) {
       player.__rikkaResumeTime = resume || 0;
-      art.type = /\.m3u8(\?|$)/i.test(finalUrl) ? "m3u8" : "";
+      art.type = isHls ? "m3u8" : "";
       art.switchUrl(finalUrl);
       player.onloadedmetadata = () => {
         resumeTime(resume);
@@ -178,7 +180,7 @@
         clearLoadTimer();
         setPlayerOverlay("", false);
       };
-    } else if (/\.m3u8(\?|$)/i.test(finalUrl) && window.Hls && Hls.isSupported()) {
+    } else if (isHls && window.Hls && Hls.isSupported()) {
       hls = new Hls({ enableWorker: true, fragLoadingTimeOut: 8000, manifestLoadingTimeOut: 8000 });
       hls.loadSource(finalUrl);
       hls.attachMedia(player);
@@ -439,6 +441,16 @@
 
   function normalizeSkipSeconds(value) {
     return Math.max(0, Math.min(600, Math.round(Number(value || 0))));
+  }
+
+  function isHlsUrl(url) {
+    return /\.m3u8(?:[?#]|$)/i.test(String(url || ""));
+  }
+
+  function playbackHlsUrl(url) {
+    const value = String(url || "");
+    if (!hlsProxyEnabled || !isHlsUrl(value) || value.startsWith("/hls-proxy?")) return value;
+    return `/hls-proxy?url=${encodeURIComponent(value)}`;
   }
 
   function maybeSkipOpening() {

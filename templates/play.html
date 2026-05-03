@@ -3,8 +3,8 @@
 {% block title %}播放 {{ item.title }} - {{ site.name }}{% endblock %}
 
 {% block head %}
-  <script src="{{ url_for('static', path='/vendor/artplayer/artplayer.js') }}?v={{ asset_version }}"></script>
-  <script src="{{ url_for('static', path='/vendor/hls/hls.min.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ static_url('/vendor/artplayer/artplayer.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ static_url('/vendor/hls/hls.min.js') }}?v={{ asset_version }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -73,5 +73,5 @@
       "playerOptions": player_options
     }|tojson }};
   </script>
-  <script src="{{ url_for('static', path='/js/player.js') }}?v={{ asset_version }}"></script>
+  <script src="{{ static_url('/js/player.js') }}?v={{ asset_version }}"></script>
 {% endblock %}

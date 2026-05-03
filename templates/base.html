@@ -4,21 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ site.name or "MewkoTV" }}{% endblock %}</title>
-    <link rel="icon" href="{{ url_for('static', path='/icons/favicon.ico') }}?v={{ asset_version }}" sizes="any">
-    <link rel="icon" href="{{ url_for('static', path='/icons/icon-192.png') }}?v={{ asset_version }}" type="image/png">
-    <link rel="apple-touch-icon" href="{{ url_for('static', path='/icons/apple-touch-icon.png') }}?v={{ asset_version }}">
-    <link rel="manifest" href="{{ url_for('static', path='/site.webmanifest') }}?v={{ asset_version }}">
+    <link rel="icon" href="{{ static_url('/icons/favicon.ico') }}?v={{ asset_version }}" sizes="any">
+    <link rel="icon" href="{{ static_url('/icons/icon-192.png') }}?v={{ asset_version }}" type="image/png">
+    <link rel="apple-touch-icon" href="{{ static_url('/icons/apple-touch-icon.png') }}?v={{ asset_version }}">
+    <link rel="manifest" href="{{ static_url('/site.webmanifest') }}?v={{ asset_version }}">
     <meta name="theme-color" content="#08121d">
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}?v={{ asset_version }}">
+    <link rel="stylesheet" href="{{ static_url('/css/app.css') }}?v={{ asset_version }}">
     <script>window.RIKKA_IMAGE_CONFIG = {{ image_config|default({})|tojson }};</script>
-    <script src="{{ url_for('static', path='/js/images.js') }}?v={{ asset_version }}"></script>
+    <script src="{{ static_url('/js/images.js') }}?v={{ asset_version }}"></script>
     {% block head %}{% endblock %}
   </head>
   <body class="{% if show_mobile_nav %}has-mobile-nav{% endif %}">
     <header class="topbar">
       <a class="brand" href="{{ url_for('index') }}">
         <span class="brand-mark" aria-hidden="true">
-          <img src="{{ url_for('static', path='/icons/icon-192.png') }}?v={{ asset_version }}" alt="">
+          <img src="{{ static_url('/icons/icon-192.png') }}?v={{ asset_version }}" alt="">
         </span>
         <span>{{ site.name or "MewkoTV" }}</span>
       </a>
@@ -160,9 +160,9 @@
           <a class="primary-button" href="{{ site.qq_group_url }}" target="_blank" rel="noopener noreferrer">加入 QQ 群</a>
         </section>
       </div>
-      <script src="{{ url_for('static', path='/js/notice.js') }}?v={{ asset_version }}"></script>
+      <script src="{{ static_url('/js/notice.js') }}?v={{ asset_version }}"></script>
     {% endif %}
-    <script src="{{ url_for('static', path='/js/settings_menu.js') }}?v={{ asset_version }}"></script>
-    <script src="{{ url_for('static', path='/js/mobile_nav.js') }}?v={{ asset_version }}"></script>
+    <script src="{{ static_url('/js/settings_menu.js') }}?v={{ asset_version }}"></script>
+    <script src="{{ static_url('/js/mobile_nav.js') }}?v={{ asset_version }}"></script>
   </body>
 </html>
