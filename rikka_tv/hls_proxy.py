@@ -153,10 +153,12 @@ def filter_m3u8_playlist(text: str, base_url: str, player_cfg: dict[str, Any]) -
         rewritten_uri = proxy_playlist_url(absolute_url) if should_proxy else absolute_url
         drop_segment = False
         if ad_filter_enabled:
+            # Only cut segments when the playlist itself has signaled an ad block.
+            # Dropping on segment URL keywords alone is too aggressive and can
+            # create visible jumps on perfectly normal VOD playlists.
             drop_segment = (
                 ad_break_active
                 or pending_ad_marker
-                or _has_ad_keyword(absolute_url, keywords)
                 or _pending_has_ad_keyword(pending, keywords)
             )
         if drop_segment:
