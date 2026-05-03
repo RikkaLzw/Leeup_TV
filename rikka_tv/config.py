@@ -18,6 +18,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "database": {"path": "data/rikka_tv.sqlite3"},
     "proxy": {"trusted_hosts": "127.0.0.1"},
+    "tvbox": {
+        "enabled": False,
+        "password": "",
+    },
     "cache_time": 7200,
     "detail_cache_seconds": 7200,
     "search_cache_seconds": 900,

@@ -275,6 +275,63 @@ input::placeholder {
   border-bottom: 1px solid rgba(235, 246, 255, 0.08);
 }
 
+.settings-tvbox {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: rgba(92, 225, 230, 0.08);
+  border: 1px solid rgba(92, 225, 230, 0.22);
+  border-radius: 8px;
+  box-shadow: var(--inner-glow);
+}
+
+.settings-tvbox-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.settings-tvbox-head strong,
+.settings-tvbox-head span {
+  display: block;
+}
+
+.settings-tvbox-head span,
+.settings-tvbox-url {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.settings-tvbox-url {
+  min-width: 0;
+  padding: 9px 10px;
+  color: var(--muted-strong);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(235, 246, 255, 0.08);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.settings-copy-button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 12px;
+  color: var(--accent-strong);
+  background: rgba(138, 219, 210, 0.105);
+  border: 1px solid rgba(138, 219, 210, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 760;
+}
+
+.settings-copy-button:hover {
+  background: rgba(138, 219, 210, 0.16);
+}
+
 .settings-about-button {
   min-height: 34px;
   color: var(--accent-strong);
@@ -1417,6 +1474,22 @@ code {
 
   .settings-list {
     gap: 6px;
+  }
+
+  .settings-tvbox {
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .settings-tvbox-head span,
+  .settings-tvbox-url {
+    font-size: 11px;
+  }
+
+  .settings-copy-button {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 
   .settings-row {

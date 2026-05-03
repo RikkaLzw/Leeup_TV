@@ -11,6 +11,10 @@
   "proxy": {
     "trusted_hosts": "127.0.0.1"
   },
+  "tvbox": {
+    "enabled": false,
+    "password": ""
+  },
   "cache_time": 7200,
   "search_max_page": 3,
   "speed_test": {

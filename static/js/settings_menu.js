@@ -3,6 +3,7 @@
   const menu = document.getElementById("settingsMenu");
   const aboutOpen = document.getElementById("aboutDialogOpen");
   const aboutDialog = document.getElementById("aboutDialog");
+  const copyButtons = document.querySelectorAll("[data-copy-text]");
   if (!toggle || !menu) return;
 
   function setOpen(open) {
@@ -33,6 +34,31 @@
   aboutOpen?.addEventListener("click", openAbout);
   aboutDialog?.addEventListener("click", (event) => {
     if (event.target.closest("[data-about-close]")) closeAbout();
+  });
+
+  copyButtons.forEach((button) => {
+    const defaultText = button.textContent || "复制";
+    button.addEventListener("click", async () => {
+      const value = button.getAttribute("data-copy-text") || "";
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch (_error) {
+        const input = document.createElement("textarea");
+        input.value = value;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.left = "-9999px";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        input.remove();
+      }
+      button.textContent = "已复制";
+      window.setTimeout(() => {
+        button.textContent = defaultText;
+      }, 1600);
+    });
   });
 
   document.addEventListener("click", (event) => {

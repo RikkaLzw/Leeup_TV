@@ -504,12 +504,12 @@ def create_app() -> FastAPI:
 
     @app.get("/api/tvbox/config", name="tvbox_config")
     async def tvbox_config(request: Request, pwd: str = ""):
-        if not _tvbox_enabled():
+        cfg = load_config()
+        if not _tvbox_enabled(cfg):
             raise HTTPException(status_code=404)
-        expected_password = _tvbox_password()
+        expected_password = _tvbox_password(cfg)
         if expected_password and pwd != expected_password:
             raise HTTPException(status_code=403, detail="TVBox 口令错误")
-        cfg = load_config()
         payload = _tvbox_config_payload(request, cfg, pwd if expected_password else "")
         return JSONResponse(payload, headers=TVBOX_CONFIG_CACHE_HEADERS)
 
@@ -634,13 +634,14 @@ def _recommend_page_config(config: dict[str, Any], level1: str, level2: str, reg
 
 
 def _serve_tvbox_maccms(source_key: str, request: Request, pwd: str = "", token: str = "") -> Response:
-    if not _tvbox_enabled():
+    cfg = load_config()
+    if not _tvbox_enabled(cfg):
         raise HTTPException(status_code=404)
-    expected_password = _tvbox_password()
+    expected_password = _tvbox_password(cfg)
     if expected_password:
         if pwd != expected_password and not _tvbox_token_matches(token, expected_password):
             raise HTTPException(status_code=403, detail="TVBox 口令错误")
-    source = MacCMSClient(load_config()).get_source(source_key)
+    source = MacCMSClient(cfg).get_source(source_key)
     if not source:
         raise HTTPException(status_code=404, detail="无效的视频源")
     upstream_url = _tvbox_upstream_url(str(source.get("api") or ""), request.query_params.multi_items())
@@ -657,19 +658,41 @@ def _serve_tvbox_maccms(source_key: str, request: Request, pwd: str = "", token:
     )
 
 
-def _tvbox_enabled() -> bool:
-    return _truthy_env("TVBOX_ENABLED")
+def _tvbox_enabled(cfg: dict[str, Any]) -> bool:
+    env_value = os.environ.get("TVBOX_ENABLED")
+    if env_value is not None:
+        return _truthy_value(env_value)
+    if "TVBOX_ENABLED" in cfg:
+        return _truthy_value(cfg.get("TVBOX_ENABLED"))
+    tvbox_cfg = cfg.get("tvbox") or {}
+    if "enabled" in tvbox_cfg:
+        return _truthy_value(tvbox_cfg.get("enabled"))
+    return False
 
 
-def _truthy_env(name: str, default: bool = False) -> bool:
-    value = os.environ.get(name)
+def _truthy_value(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
     if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on", "enabled"}
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on", "enabled"}
 
 
-def _tvbox_password() -> str:
-    return (os.environ.get("TVBOX_PASSWORD") or os.environ.get("PASSWORD") or "").strip()
+def _tvbox_password(cfg: dict[str, Any]) -> str:
+    env_password = os.environ.get("TVBOX_PASSWORD")
+    if env_password is not None:
+        return env_password.strip()
+    env_password = os.environ.get("PASSWORD")
+    if env_password is not None:
+        return env_password.strip()
+    if cfg.get("TVBOX_PASSWORD") is not None:
+        return str(cfg.get("TVBOX_PASSWORD") or "").strip()
+    if cfg.get("PASSWORD") is not None:
+        return str(cfg.get("PASSWORD") or "").strip()
+    tvbox_cfg = cfg.get("tvbox") or {}
+    if tvbox_cfg.get("password") is not None:
+        return str(tvbox_cfg.get("password") or "").strip()
+    return ""
 
 
 def _tvbox_password_token(password: str) -> str:
@@ -827,6 +850,7 @@ def _template(request: Request, name: str, **context: Any) -> HTMLResponse:
         "asset_version": _asset_version(),
         "image_config": _image_runtime_config(cfg),
         "app_status": _app_status_summary(cfg, client, visitor_stats),
+        "tvbox_status": _tvbox_status(cfg, request),
         "mobile_nav_items": _mobile_nav_items(),
         "show_mobile_nav": False,
         "active_mobile_level": "",
@@ -860,6 +884,24 @@ def _image_runtime_config(cfg: dict[str, Any]) -> dict[str, str]:
     return {
         "doubanImageProxyMode": _image_proxy_label(douban_cfg),
     }
+
+
+def _tvbox_status(cfg: dict[str, Any], request: Request) -> dict[str, str | bool]:
+    enabled = _tvbox_enabled(cfg)
+    url = _tvbox_public_config_url(request, cfg) if enabled else ""
+    return {
+        "enabled": enabled,
+        "url": url,
+        "password_required": bool(_tvbox_password(cfg)),
+    }
+
+
+def _tvbox_public_config_url(request: Request, cfg: dict[str, Any]) -> str:
+    url = str(request.url_for("tvbox_config"))
+    password = _tvbox_password(cfg)
+    if not password:
+        return url
+    return f"{url}?{urlencode({'pwd': password})}"
 
 
 def _app_status_summary(

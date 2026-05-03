@@ -81,6 +81,18 @@
               <strong>{{ app_status.skip_label }}</strong>
             </div>
           </div>
+          {% if tvbox_status.enabled %}
+            <div class="settings-tvbox">
+              <div class="settings-tvbox-head">
+                <div>
+                  <strong>TVBox</strong>
+                  <span>已开启</span>
+                </div>
+                <button class="settings-copy-button" type="button" data-copy-text="{{ tvbox_status.url }}">复制</button>
+              </div>
+              <div class="settings-tvbox-url">{{ tvbox_status.url }}</div>
+            </div>
+          {% endif %}
           <button class="settings-about-button" id="aboutDialogOpen" type="button">关于</button>
         </section>
       </div>

@@ -39,7 +39,16 @@ $env:MEWKOTV_RELOAD="0"; uv run python app.py
 
 ## TVBox 接口
 
-默认关闭。开启后会把 `config.json` 里已启用的 MacCMS 源导出为 TVBox 配置：
+默认关闭。开启后会把 `config.json` 里已启用的 MacCMS 源导出为 TVBox 配置。推荐直接在 `config.json` 配：
+
+```json
+"tvbox": {
+  "enabled": true,
+  "password": "leeup"
+}
+```
+
+也可以用环境变量临时覆盖配置：
 
 ```powershell
 $env:TVBOX_ENABLED="true"
@@ -54,6 +63,7 @@ http://127.0.0.1:8000/api/tvbox/config?pwd=leeup
 ```
 
 部署到 HTTPS 域名后，把域名替换成自己的站点地址即可，例如 `https://tv.example.com/api/tvbox/config?pwd=leeup`。口令优先读取 `TVBOX_PASSWORD`，未设置时读取 `PASSWORD`。
+如果没有设置环境变量，则读取 `config.json` 里的 `tvbox.password`。
 
 ## 配置视频源
 
