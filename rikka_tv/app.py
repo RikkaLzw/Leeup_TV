@@ -533,24 +533,38 @@ def create_app() -> FastAPI:
             return JSONResponse({"error": "missing title or current video"}, status_code=400)
         cfg = load_config()
         video_client = MacCMSClient(cfg)
-        candidates = video_client.find_play_candidates(
-            title,
-            source,
-            video_id,
-            payload.episode,
-            full=True,
-            expected_year=payload.year,
-            expected_kind=payload.kind,
-        )
-        prefer_douban_posters(candidates, cfg)
-        return {"best": None, "candidates": _prepare_browser_test_candidates(candidates, payload.episode)}
+        try:
+            candidates = video_client.find_play_candidates(
+                title,
+                source,
+                video_id,
+                payload.episode,
+                full=True,
+                expected_year=payload.year,
+                expected_kind=payload.kind,
+            )
+            prefer_douban_posters(candidates, cfg)
+            return {"best": None, "candidates": _prepare_browser_test_candidates(candidates, payload.episode)}
+        except Exception as exc:
+            LOGGER.exception(
+                "Prefer candidates failed: title=%r source=%s id=%s episode=%s",
+                title,
+                source,
+                video_id,
+                payload.episode,
+            )
+            return JSONResponse({"error": f"测速候选源获取失败：{exc}"}, status_code=500)
 
     @app.post("/api/source-metrics", name="api_source_metrics_post")
     async def api_source_metrics_post(payload: SpeedResultPayload):
-        candidates = payload.candidates or []
-        save_source_test_metrics(candidates)
-        result = prefer_best_source(candidates, 0, load_config().get("speed_test", {}), full=True, measured=True)
-        return {"ok": True, "best": result.get("best"), "candidates": result.get("candidates", [])}
+        try:
+            candidates = payload.candidates or []
+            save_source_test_metrics(candidates)
+            result = prefer_best_source(candidates, 0, load_config().get("speed_test", {}), full=True, measured=True)
+            return {"ok": True, "best": result.get("best"), "candidates": result.get("candidates", [])}
+        except Exception as exc:
+            LOGGER.exception("Saving source metrics failed")
+            return JSONResponse({"error": f"保存测速结果失败：{exc}"}, status_code=500)
 
     return app
 

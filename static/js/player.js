@@ -116,6 +116,52 @@
     if (preferStatus) preferStatus.textContent = text;
   }
 
+  async function readJsonResponse(response, fallbackMessage) {
+    const body = await response.text();
+    const text = String(body || "").trim();
+    let data = {};
+    if (text) {
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json") || /^[\[{]/.test(text)) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`${fallbackMessage}：接口返回的 JSON 无法解析`);
+        }
+      } else {
+        const snippet = responseTextSnippet(text);
+        const status = response.status ? `HTTP ${response.status}` : "响应";
+        throw new Error(`${fallbackMessage}：${status} 返回了非 JSON 内容${snippet ? `（${snippet}）` : ""}`);
+      }
+    }
+    if (!response.ok) {
+      throw new Error(payloadErrorMessage(data) || `${fallbackMessage}：HTTP ${response.status}`);
+    }
+    return data;
+  }
+
+  function payloadErrorMessage(data) {
+    const message = data?.error || data?.message || data?.detail;
+    if (!message) return "";
+    if (Array.isArray(message)) {
+      return message.map((item) => item?.msg || item?.type || "参数错误").join("；");
+    }
+    if (typeof message === "object") {
+      return JSON.stringify(message).slice(0, 120);
+    }
+    return String(message);
+  }
+
+  function responseTextSnippet(text) {
+    return String(text || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+  }
+
   function setPlayerOverlay(text, visible = true) {
     const shouldShow = Boolean(visible && text);
     if (playerOverlay && playerOverlayText) {
@@ -605,8 +651,7 @@
           kind: inferDetailKind(cfg.originalDetail || cfg.detail)
         })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "优选失败");
+      const data = await readJsonResponse(res, "测速候选源获取失败");
       let candidates = data.candidates || [];
       candidateList.__candidates = candidates;
       renderCandidates(candidates);
