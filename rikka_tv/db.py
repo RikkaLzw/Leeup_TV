@@ -105,6 +105,8 @@ def save_source_test_metrics(candidates: list[dict[str, Any]]) -> None:
             if not source:
                 continue
             test = candidate.get("test") or {}
+            if test.get("playable_only"):
+                continue
             ok = 1 if test.get("ok") else 0
             score = float(test.get("score") or 0)
             speed_kbps = _capped_metric_speed(float(test.get("speed_kbps") or 0)) if ok else 0

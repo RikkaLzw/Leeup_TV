@@ -1500,7 +1500,7 @@
 
   function rankCandidates(candidates, mode = "speed") {
     const list = Array.from(candidates || []);
-    const okItems = list.filter((candidate) => candidate.test?.ok);
+    const okItems = list.filter((candidate) => candidate.test?.ok && !candidate.test?.playable_only);
     const maxSpeed = Math.max(...okItems.map((candidate) => Number(candidate.test.speed_kbps || 0)), 1);
     const latencies = okItems.map((candidate) => Number(candidate.test.latency_ms || 0)).filter((value) => value > 0);
     const minLatency = latencies.length ? Math.min(...latencies) : 0;
@@ -1526,6 +1526,9 @@
     const bTest = b.test || {};
     if (Boolean(aTest.ok) !== Boolean(bTest.ok)) return bTest.ok ? 1 : -1;
     if (!aTest.ok && !bTest.ok) return 0;
+    const aMeasured = !aTest.playable_only && Number(aTest.speed_kbps || 0) > 0;
+    const bMeasured = !bTest.playable_only && Number(bTest.speed_kbps || 0) > 0;
+    if (aMeasured !== bMeasured) return bMeasured ? 1 : -1;
     const aSpeed = Number(aTest.speed_kbps || 0);
     const bSpeed = Number(bTest.speed_kbps || 0);
     const aQuality = qualityRankValue(aTest.quality);
@@ -1709,8 +1712,7 @@
   }
 
   function playableFallbackTest(quality, height, latencyMs, confidence, measuredBy) {
-    const fallbackSpeed = confidence === "manifest" ? 256 : 1024;
-    const test = okTest(quality, height, latencyMs, fallbackSpeed, {
+    const test = okTest(quality, height, latencyMs, 0, {
       measuredBy,
       playableOnly: true,
       speedLabel: "可播放"
