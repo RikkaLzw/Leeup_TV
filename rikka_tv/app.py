@@ -89,13 +89,24 @@ def _poster_display_url(value: Any, cfg: dict[str, Any] | None = None) -> str:
     url = _direct_poster_url(value)
     if not url or "doubanio.com" not in url:
         return url
-    douban_cfg = (cfg or load_config()).get("douban") or {}
-    proxy_type = str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali")
-    if proxy_type == "server" or proxy_type == "custom" or "cdn" in proxy_type:
-        return f"/image/douban?url={quote(url, safe='')}"
-    if proxy_type == "img3":
-        return _replace_douban_image_host(url, "img3.doubanio.com")
-    return url
+    config = cfg or load_config()
+    douban_cfg = config.get("douban") or {}
+    proxy_type = _douban_image_proxy_type(douban_cfg)
+    if proxy_type == "server":
+        return _server_douban_image_url(url)
+    return _configured_douban_image_candidate(url, config) or url
+
+
+def _server_douban_image_url(url: str) -> str:
+    return f"/image/douban?url={quote(url, safe='')}"
+
+
+def _douban_image_proxy_type(douban_cfg: dict[str, Any]) -> str:
+    return str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali").strip().lower()
+
+
+def _douban_image_proxy_url(douban_cfg: dict[str, Any]) -> str:
+    return str(douban_cfg.get("image_proxy_url") or "").strip()
 
 
 def _replace_douban_image_host(url: str, host: str) -> str:
@@ -881,8 +892,11 @@ def _asset_version() -> str:
 
 def _image_runtime_config(cfg: dict[str, Any]) -> dict[str, str]:
     douban_cfg = cfg.get("douban") or {}
+    proxy_type = _douban_image_proxy_type(douban_cfg)
     return {
         "doubanImageProxyMode": _image_proxy_label(douban_cfg),
+        "doubanImageProxyType": proxy_type,
+        "doubanImageProxyUrl": _douban_image_proxy_url(douban_cfg) if proxy_type == "custom" else "",
     }
 
 
@@ -936,7 +950,7 @@ def _app_status_summary(
 
 
 def _image_proxy_label(douban_cfg: dict[str, Any]) -> str:
-    proxy_type = str(douban_cfg.get("image_proxy_type") or "").strip().lower()
+    proxy_type = _douban_image_proxy_type(douban_cfg)
     if not proxy_type:
         return "直连图片"
     if proxy_type == "server":
@@ -949,19 +963,18 @@ def _image_proxy_label(douban_cfg: dict[str, Any]) -> str:
 
 
 def _image_proxy_detail(douban_cfg: dict[str, Any]) -> str:
-    proxy_type = str(douban_cfg.get("image_proxy_type") or "").strip().lower()
+    proxy_type = _douban_image_proxy_type(douban_cfg)
     if proxy_type == "server":
         return "经本站转发，隐藏上游地址"
     if proxy_type == "custom" or "cdn" in proxy_type:
-        return "具体服务商与线路已隐藏"
+        return "浏览器直连 CDN，减轻本站图片流量"
     if proxy_type == "img3":
-        return "使用公共备用图片域名"
-    return "未启用外部加速"
+        return "浏览器直连公共备用图片域名"
+    return "浏览器直连原图"
 
 
 def _image_proxy_uses_hidden_cdn(douban_cfg: dict[str, Any]) -> bool:
-    proxy_type = str(douban_cfg.get("image_proxy_type") or "").strip().lower()
-    return proxy_type == "custom" or "cdn" in proxy_type
+    return False
 
 
 def _duration_label(seconds: int) -> str:
@@ -1443,8 +1456,8 @@ def _douban_image_candidates(url: str, cfg: dict[str, Any] | None = None) -> lis
 
 def _configured_douban_image_candidate(url: str, cfg: dict[str, Any]) -> str:
     douban_cfg = cfg.get("douban") or {}
-    proxy_type = str(douban_cfg.get("image_proxy_type") or "cmliussss-cdn-ali").strip().lower()
-    proxy_url = str(douban_cfg.get("image_proxy_url") or "").strip()
+    proxy_type = _douban_image_proxy_type(douban_cfg)
+    proxy_url = _douban_image_proxy_url(douban_cfg)
     if proxy_type == "cmliussss-cdn-tencent":
         return _replace_douban_image_host(url, "img.doubanio.cmliussss.net")
     if proxy_type == "cmliussss-cdn-ali":
