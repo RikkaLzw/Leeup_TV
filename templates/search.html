@@ -20,7 +20,7 @@
         {% endif %}
       </div>
       {% if q and search_meta and search_meta.has_more %}
-        <a class="secondary-button" href="{{ url_for('search') }}?q={{ q|urlencode }}&scope=all">搜索更多源</a>
+        <a class="secondary-button" href="{{ url_for('search') }}?q={{ q|urlencode }}&scope=all" data-search-progress-link>搜索更多源</a>
       {% endif %}
     </div>
 

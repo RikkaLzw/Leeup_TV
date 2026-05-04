@@ -24,7 +24,7 @@
       </a>
       <form class="top-search" action="/search" method="get">
         <input type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
-        <button type="submit">搜索</button>
+        <button type="submit" data-search-submit>搜索</button>
       </form>
       <div class="top-actions">
         <button class="settings-toggle" id="settingsMenuToggle" type="button" aria-label="打开设置" aria-controls="settingsMenu" aria-expanded="false">
@@ -101,7 +101,7 @@
     <div class="mobile-search-panel" id="mobileSearchPanel" hidden>
       <form class="mobile-bottom-search" action="/search" method="get">
         <input id="mobileSearchInput" type="search" name="q" placeholder="搜索电影、剧集、动漫" value="{{ q or '' }}">
-        <button type="submit">搜索</button>
+        <button type="submit" data-search-submit>搜索</button>
       </form>
     </div>
 
@@ -133,6 +133,17 @@
       {% endif %}
       {% block content %}{% endblock %}
     </main>
+
+    <div class="search-progress" id="searchProgress" role="status" aria-live="polite" hidden>
+      <div class="search-progress-card">
+        <div class="search-progress-spinner" aria-hidden="true"></div>
+        <div>
+          <strong id="searchProgressTitle">正在搜索</strong>
+          <span id="searchProgressDetail">正在请求视频源，请稍等</span>
+        </div>
+        <div class="search-progress-track" aria-hidden="true"><span></span></div>
+      </div>
+    </div>
 
     <div class="about-modal" id="aboutDialog" hidden>
       <div class="about-backdrop" data-about-close></div>
@@ -176,5 +187,6 @@
     {% endif %}
     <script src="{{ static_url('/js/settings_menu.js') }}?v={{ asset_version }}"></script>
     <script src="{{ static_url('/js/mobile_nav.js') }}?v={{ asset_version }}"></script>
+    <script src="{{ static_url('/js/search_feedback.js') }}?v={{ asset_version }}"></script>
   </body>
 </html>
