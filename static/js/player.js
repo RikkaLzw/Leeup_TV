@@ -1169,7 +1169,196 @@
     return measureNativeStream(value);
   }
 
-  function measureHlsStream(url) {
+  async function measureHlsStream(url) {
+    try {
+      return await measureHlsStreamByRange(url);
+    } catch {
+      return measureHlsStreamByPlayback(url);
+    }
+  }
+
+  async function measureHlsStreamByRange(url) {
+    const started = performance.now();
+    const playlist = await resolveHlsProbePlaylist(url, 0, started);
+    if (!playlist.segments.length) throw new Error("empty_hls_segments");
+    const sampleBytes = 512 * 1024;
+    const minBytes = 256 * 1024;
+    const maxSegments = 4;
+    let totalBytes = 0;
+    let firstByteAt = 0;
+    const probeStartedAt = performance.now();
+    for (const segmentUrl of playlist.segments.slice(0, maxSegments)) {
+      let segment = null;
+      try {
+        segment = await fetchRangeSample(segmentUrl, sampleBytes, minBytes, 9000);
+      } catch {
+        continue;
+      }
+      if (!firstByteAt) firstByteAt = segment.firstByteAt;
+      totalBytes += segment.bytes;
+      if (totalBytes >= minBytes) break;
+    }
+    if (!totalBytes) throw new Error("empty_hls_sample");
+    const elapsed = Math.max(performance.now() - probeStartedAt, 1);
+    const latencyMs = Math.max(Math.round((firstByteAt || performance.now()) - started), 0);
+    const speedKbps = (totalBytes / 1024) / (elapsed / 1000);
+    return okTest(playlist.quality, playlist.height, latencyMs, speedKbps, {
+      measuredBy: "browser_hls_range",
+    });
+  }
+
+  async function resolveHlsProbePlaylist(url, depth, started) {
+    if (depth > 3) throw new Error("hls_nested_too_deep");
+    const response = await fetchTextWithTimeout(url, 7000);
+    if (!response.text.includes("#EXTM3U")) throw new Error("invalid_hls_manifest");
+    const lines = hlsLines(response.text);
+    const variants = parseHlsVariants(lines, response.url || url);
+    if (variants.length) {
+      const best = variants.sort((a, b) => (
+        b.height - a.height ||
+        b.bandwidth - a.bandwidth
+      ))[0];
+      const resolved = await resolveHlsProbePlaylist(best.url, depth + 1, started);
+      return {
+        ...resolved,
+        width: resolved.width || best.width,
+        height: resolved.height || best.height,
+        quality: resolved.height ? resolved.quality : resolutionToQuality(best.width, best.height),
+        bandwidth: resolved.bandwidth || best.bandwidth,
+      };
+    }
+    const segments = parseHlsSegments(lines, response.url || url);
+    if (!segments.length) throw new Error("empty_hls_segments");
+    const dimensions = inferHlsMediaDimensions(lines);
+    return {
+      segments,
+      width: dimensions.width,
+      height: dimensions.height,
+      quality: resolutionToQuality(dimensions.width, dimensions.height),
+      bandwidth: 0,
+      latencyMs: Math.max(Math.round(response.firstByteAt - started), 0),
+    };
+  }
+
+  async function fetchTextWithTimeout(url, timeoutMs) {
+    const controller = window.AbortController ? new AbortController() : null;
+    const started = performance.now();
+    const response = await timedPromise(
+      fetch(url, {
+        method: "GET",
+        ...(controller ? { signal: controller.signal } : {}),
+      }),
+      timeoutMs,
+      () => controller?.abort()
+    );
+    if (!response.ok) throw new Error("bad_hls_status");
+    const firstByteAt = performance.now();
+    const text = await timedPromise(
+      response.text(),
+      Math.max(timeoutMs - (performance.now() - started), 1000),
+      () => controller?.abort()
+    );
+    return { text, url: response.url || url, firstByteAt };
+  }
+
+  async function fetchRangeSample(url, sampleBytes, minBytes, timeoutMs) {
+    try {
+      return await fetchSegmentSample(url, sampleBytes, minBytes, timeoutMs, true);
+    } catch {
+      return fetchSegmentSample(url, sampleBytes, minBytes, timeoutMs, false);
+    }
+  }
+
+  async function fetchSegmentSample(url, sampleBytes, minBytes, timeoutMs, useRange) {
+    const controller = window.AbortController ? new AbortController() : null;
+    const started = performance.now();
+    const response = await timedPromise(
+      fetch(url, {
+        method: "GET",
+        ...(useRange ? { headers: { Range: `bytes=0-${Math.max(sampleBytes - 1, 0)}` } } : {}),
+        ...(controller ? { signal: controller.signal } : {}),
+      }),
+      timeoutMs,
+      () => controller?.abort()
+    );
+    if (!response.ok && response.status !== 206) throw new Error("bad_hls_segment_status");
+    const firstByteAt = performance.now();
+    const bytes = await timedPromise(
+      readResponseSample(response, sampleBytes, minBytes),
+      Math.max(timeoutMs - (performance.now() - started), 1000),
+      () => controller?.abort()
+    );
+    if (!bytes) throw new Error("empty_hls_segment");
+    return { bytes, firstByteAt };
+  }
+
+  function hlsLines(text) {
+    return String(text || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  function parseHlsVariants(lines, baseUrl) {
+    const variants = [];
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (!line.startsWith("#EXT-X-STREAM-INF")) continue;
+      const next = lines[index + 1] || "";
+      if (!next || next.startsWith("#")) continue;
+      const attrs = parseHlsAttributes(line);
+      const resolution = String(attrs.RESOLUTION || "").split("x");
+      variants.push({
+        url: absoluteHlsUrl(next, baseUrl),
+        width: Number(resolution[0] || 0),
+        height: Number(resolution[1] || 0),
+        bandwidth: Number(attrs.BANDWIDTH || 0),
+      });
+    }
+    return variants;
+  }
+
+  function parseHlsSegments(lines, baseUrl) {
+    return lines
+      .filter((line) => line && !line.startsWith("#"))
+      .map((line) => absoluteHlsUrl(line, baseUrl))
+      .filter(Boolean);
+  }
+
+  function parseHlsAttributes(line) {
+    const attrs = {};
+    const value = String(line || "").replace(/^#[^:]+:/, "");
+    const pattern = /([A-Z0-9-]+)=("[^"]*"|[^,]*)/g;
+    let match = pattern.exec(value);
+    while (match) {
+      attrs[match[1]] = String(match[2] || "").replace(/^"|"$/g, "");
+      match = pattern.exec(value);
+    }
+    return attrs;
+  }
+
+  function inferHlsMediaDimensions(lines) {
+    for (const line of lines) {
+      if (!line.startsWith("#EXT-X-STREAM-INF")) continue;
+      const attrs = parseHlsAttributes(line);
+      const resolution = String(attrs.RESOLUTION || "").split("x");
+      return {
+        width: Number(resolution[0] || 0),
+        height: Number(resolution[1] || 0),
+      };
+    }
+    return { width: 0, height: 0 };
+  }
+
+  function absoluteHlsUrl(value, baseUrl) {
+    try {
+      return new URL(value, baseUrl).toString();
+    } catch {
+      return String(value || "");
+    }
+  }
+
+  function measureHlsStreamByPlayback(url) {
     const playbackUrl = playbackHlsUrl(url);
     if (!window.Hls || !Hls.isSupported()) {
       return measureMediaElementPlayback(playbackUrl, "browser_hls_native");
@@ -1453,7 +1642,7 @@
     return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
   }
 
-  async function readResponseSample(response, sampleBytes) {
+  async function readResponseSample(response, sampleBytes, minBytes = sampleBytes) {
     const limit = Math.max(Number(sampleBytes || 0), 1);
     if (!response.body || typeof response.body.getReader !== "function") {
       const buffer = await response.arrayBuffer();
@@ -1461,11 +1650,13 @@
     }
     const reader = response.body.getReader();
     let total = 0;
+    const enough = Math.max(1, Math.min(Number(minBytes || limit), limit));
     try {
       while (total < limit) {
         const { value, done } = await reader.read();
         if (done) break;
         total += Number(value?.byteLength || value?.length || 0);
+        if (total >= enough) break;
       }
     } finally {
       try {
