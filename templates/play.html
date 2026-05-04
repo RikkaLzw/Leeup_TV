@@ -64,7 +64,10 @@
           <span id="preferStatus">{{ "站内推荐" if item.recommended_by_metrics else ("手动测速" if prefer_enabled else "直连播放") }}</span>
         </div>
         <button class="cast-panel-button" id="castPanelButton" type="button" hidden>投屏</button>
-        <button class="speed-test-button" id="speedTestButton" type="button" {% if not prefer_enabled %}disabled{% endif %}>测速</button>
+        <div class="speed-test-actions">
+          <button class="speed-test-button" type="button" data-speed-test-mode="speed" {% if not prefer_enabled %}disabled{% endif %}>速度优先</button>
+          <button class="speed-test-button" type="button" data-speed-test-mode="quality" {% if not prefer_enabled %}disabled{% endif %}>清晰度优先</button>
+        </div>
         <div id="candidateList" class="candidate-list"></div>
       </div>
 

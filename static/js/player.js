@@ -35,13 +35,14 @@
   const candidateList = document.getElementById("candidateList");
   const episodeList = document.getElementById("episodeList");
   const episodeCount = document.getElementById("episodeCount");
-  const speedTestButton = document.getElementById("speedTestButton");
+  const speedTestButtons = Array.from(document.querySelectorAll("[data-speed-test-mode]"));
   const castButton = document.getElementById("castButton");
   const castPanelButton = document.getElementById("castPanelButton");
   const mobileTabs = Array.from(document.querySelectorAll("[data-mobile-panel]"));
   const preferPanel = document.querySelector(".prefer-panel");
   const episodePanel = document.querySelector(".episode-panel");
   const resumeRecord = findResumeRecord();
+  let speedTestRunning = false;
   configureArtPlayer();
   const player = createPlayer();
 
@@ -1064,12 +1065,17 @@
     }
   }
 
-  async function runPreference() {
-    if (!cfg.preferEnabled || speedTestButton?.disabled) return;
-    const originalText = speedTestButton.textContent;
-    speedTestButton.disabled = true;
-    speedTestButton.textContent = "测速中";
-    setStatus("正在匹配可用候选源");
+  async function runPreference(mode = "speed") {
+    const activeButton = speedTestButtons.find((button) => button.dataset.speedTestMode === mode) || speedTestButtons[0];
+    if (!cfg.preferEnabled || speedTestRunning || activeButton?.disabled) return;
+    const originalText = activeButton?.textContent || "";
+    speedTestRunning = true;
+    speedTestButtons.forEach((button) => {
+      button.disabled = true;
+      button.classList.toggle("active", button === activeButton);
+    });
+    if (activeButton) activeButton.textContent = "测速中";
+    setStatus(`正在匹配可用候选源 · ${rankModeLabel(mode)}`);
     try {
       const res = await fetch("/api/prefer", {
         method: "POST",
@@ -1091,13 +1097,13 @@
       candidateList.__candidates = candidates;
       renderCandidates(candidates);
       candidates = await testCandidatesInBrowser(candidates);
-      const ranked = rankCandidates(candidates);
+      const ranked = rankCandidates(candidates, mode);
       candidateList.__candidates = ranked;
       renderCandidates(ranked);
       postSpeedResults(ranked);
       const best = ranked.find((candidate) => candidate.test?.ok);
       if (best) {
-        setStatus(`测速完成：推荐 ${best.source_name}`);
+        setStatus(`测速完成：${rankModeLabel(mode)}推荐 ${best.source_name}`);
         if (player.paused && player.currentTime < 1 && `${best.source}+${best.id}` !== `${currentSource}+${currentId}`) {
           autoSwitchAllowed = true;
           applyCandidate(best, true);
@@ -1108,9 +1114,17 @@
     } catch (error) {
       setStatus(error.message || "测速失败");
     } finally {
-      speedTestButton.disabled = false;
-      speedTestButton.textContent = originalText || "测速";
+      speedTestRunning = false;
+      speedTestButtons.forEach((button) => {
+        button.disabled = !cfg.preferEnabled;
+        button.classList.remove("active");
+      });
+      if (activeButton) activeButton.textContent = originalText || rankModeLabel(mode);
     }
+  }
+
+  function rankModeLabel(mode) {
+    return mode === "quality" ? "清晰度优先" : "速度优先";
   }
 
   function inferDetailKind(item) {
@@ -1183,6 +1197,7 @@
       let recoveries = 0;
       let timer = 0;
       let playableTimer = 0;
+      let measuredFinishTimer = 0;
       let playableDeadline = 0;
       const minProbeBytes = 384 * 1024;
       const maxProbeFragments = 4;
@@ -1192,6 +1207,7 @@
         resolved = true;
         window.clearTimeout(timer);
         window.clearTimeout(playableTimer);
+        window.clearTimeout(measuredFinishTimer);
         if (hlsTester) hlsTester.destroy();
         try {
           video.pause();
@@ -1218,10 +1234,20 @@
           finishPlayable(metadataReady || probeBytes > 0 ? "metadata" : "manifest");
         }, delayMs);
       };
-      const maybeFinish = () => {
-        if (!speedKbps) return;
+      const finishMeasured = () => {
         const dimensions = probeDimensions(video, manifestWidth, manifestHeight);
         finish(okTest(dimensions.quality, dimensions.height, latencyMs, speedKbps, { measuredBy: "browser_hls" }));
+      };
+      const maybeFinish = () => {
+        if (!speedKbps) return;
+        if (!metadataReady && !measuredFinishTimer) {
+          measuredFinishTimer = window.setTimeout(() => {
+            measuredFinishTimer = 0;
+            finishMeasured();
+          }, 1200);
+          return;
+        }
+        finishMeasured();
       };
       timer = window.setTimeout(() => {
         if (manifestReady || metadataReady || probeBytes > 0) {
@@ -1472,7 +1498,7 @@
     }
   }
 
-  function rankCandidates(candidates) {
+  function rankCandidates(candidates, mode = "speed") {
     const list = Array.from(candidates || []);
     const okItems = list.filter((candidate) => candidate.test?.ok);
     const maxSpeed = Math.max(...okItems.map((candidate) => Number(candidate.test.speed_kbps || 0)), 1);
@@ -1492,7 +1518,34 @@
         : ((maxLatency - Number(test.latency_ms || maxLatency)) / (maxLatency - minLatency)) * 100;
       test.score = Math.round((speedScore * 0.7 + qualityScore * 0.2 + latencyScore * 0.1) * 100) / 100;
     });
-    return list.sort((a, b) => Number(b.test?.score || 0) - Number(a.test?.score || 0));
+    return list.sort((a, b) => compareCandidates(a, b, mode));
+  }
+
+  function compareCandidates(a, b, mode) {
+    const aTest = a.test || {};
+    const bTest = b.test || {};
+    if (Boolean(aTest.ok) !== Boolean(bTest.ok)) return bTest.ok ? 1 : -1;
+    if (!aTest.ok && !bTest.ok) return 0;
+    const aSpeed = Number(aTest.speed_kbps || 0);
+    const bSpeed = Number(bTest.speed_kbps || 0);
+    const aQuality = qualityRankValue(aTest.quality);
+    const bQuality = qualityRankValue(bTest.quality);
+    const aLatency = Number(aTest.latency_ms || Number.MAX_SAFE_INTEGER);
+    const bLatency = Number(bTest.latency_ms || Number.MAX_SAFE_INTEGER);
+    if (mode === "quality") {
+      return (
+        bQuality - aQuality ||
+        bSpeed - aSpeed ||
+        aLatency - bLatency ||
+        Number(bTest.score || 0) - Number(aTest.score || 0)
+      );
+    }
+    return (
+      bSpeed - aSpeed ||
+      bQuality - aQuality ||
+      aLatency - bLatency ||
+      Number(bTest.score || 0) - Number(aTest.score || 0)
+    );
   }
 
   function postSpeedResults(candidates) {
@@ -1639,8 +1692,7 @@
     const quality = escapeHtml(test.quality || "未知");
     const speed = escapeHtml(test.speed_label || "未知");
     const latency = Number.isFinite(Number(test.latency_ms)) ? `${Number(test.latency_ms)}ms` : "未知";
-    const score = Number.isFinite(Number(test.score)) ? Number(test.score).toFixed(0) : "0";
-    return `<span class="candidate-metrics">${quality} · ${speed} · ${latency} · ${score}</span>`;
+    return `<span class="candidate-metrics">${quality} · ${speed} · ${latency}</span>`;
   }
 
   function cssEscape(value) {
@@ -1750,7 +1802,19 @@
     return 0;
   }
 
-  speedTestButton?.addEventListener("click", runPreference);
+  function qualityRankValue(quality) {
+    if (quality === "4K") return 5;
+    if (quality === "2K") return 4;
+    if (quality === "1080p") return 3;
+    if (quality === "720p") return 2;
+    if (quality === "480p") return 1;
+    if (quality === "SD") return 0.5;
+    return 0;
+  }
+
+  speedTestButtons.forEach((button) => {
+    button.addEventListener("click", () => runPreference(button.dataset.speedTestMode || "speed"));
+  });
   setupCastButton();
   mobileTabs.forEach((tab) => {
     tab.addEventListener("click", () => setMobilePanel(tab.dataset.mobilePanel || "episodes"));
