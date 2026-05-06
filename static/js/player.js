@@ -1,7 +1,7 @@
 (function () {
   const cfg = window.PLAYER_CONFIG;
   let detail = cfg.detail;
-  let currentEpisode = cfg.episode || 0;
+  let currentEpisode = clampEpisode(cfg.episode || 0);
   let currentSource = detail.source;
   let currentId = detail.id;
   let hls = null;
@@ -42,6 +42,7 @@
   const preferPanel = document.querySelector(".prefer-panel");
   const episodePanel = document.querySelector(".episode-panel");
   const resumeRecord = findResumeRecord();
+  currentEpisode = initialEpisodeFromResume();
   let speedTestRunning = false;
   configureArtPlayer();
   const player = createPlayer();
@@ -489,8 +490,10 @@
       button.className = `episode-button${index === currentEpisode ? " active" : ""}`;
       button.textContent = episodeTitle(index);
       button.addEventListener("click", () => {
+        saveProgress();
         currentEpisode = index;
         renderEpisodes();
+        syncPlaybackUrl();
         playUrl(detail.episodes[currentEpisode], 0);
       });
       episodeList.appendChild(button);
@@ -560,12 +563,13 @@
     detail = candidate;
     currentSource = candidate.source;
     currentId = candidate.id;
-    currentEpisode = Math.min(candidate.selected_episode || currentEpisode, detail.episodes.length - 1);
+    currentEpisode = clampEpisode(candidate.selected_episode ?? currentEpisode);
     document.getElementById("activeTitle").textContent = detail.title;
     document.getElementById("activeMeta").innerHTML = `<span>${escapeHtml(detail.source_name)}</span>${detail.year ? `<span>${escapeHtml(detail.year)}</span>` : ""}`;
     const desc = document.getElementById("activeDesc");
     if (desc) desc.textContent = detail.desc || "";
     renderEpisodes();
+    syncPlaybackUrl();
     renderCandidates(Array.from(candidateList.__candidates || []));
     ensureCandidateVisible(candidate);
     playUrl(detail.episodes[currentEpisode], resumeTimeFor(currentSource, currentId, currentEpisode, handoffTime));
@@ -582,6 +586,7 @@
     } else {
       setStatus("直连播放");
     }
+    syncPlaybackUrl();
     playUrl(detail.episodes[currentEpisode], resumeTimeFor(currentSource, currentId, currentEpisode));
   }
 
@@ -601,6 +606,7 @@
     saveProgress();
     currentEpisode += 1;
     renderEpisodes();
+    syncPlaybackUrl();
     playUrl(episodes[currentEpisode], 0);
     playMedia();
   }
@@ -1852,6 +1858,40 @@
     const sameTitle = normalizeTitle(resumeRecord.search_title || resumeRecord.title) === normalizeTitle((cfg.originalDetail || cfg.detail || {}).title || detail.title);
     const sameEpisode = Number(resumeRecord.episode_index || 0) === Number(episode || 0);
     return (sameSource || sameTitle) && sameEpisode ? Number(resumeRecord.play_time || 0) : 0;
+  }
+
+  function initialEpisodeFromResume() {
+    if (urlHasEpisodeParam() || !resumeRecord) return clampEpisode(currentEpisode);
+    const savedEpisode = Number(resumeRecord.episode_index);
+    if (!Number.isFinite(savedEpisode)) return clampEpisode(currentEpisode);
+    return clampEpisode(savedEpisode);
+  }
+
+  function clampEpisode(index) {
+    const episodes = Array.isArray(detail?.episodes) ? detail.episodes : [];
+    const maxEpisode = Math.max(episodes.length - 1, 0);
+    const value = Math.floor(Number(index || 0));
+    if (!Number.isFinite(value)) return 0;
+    return Math.min(Math.max(value, 0), maxEpisode);
+  }
+
+  function urlHasEpisodeParam() {
+    try {
+      return new URL(window.location.href).searchParams.has("episode");
+    } catch {
+      return false;
+    }
+  }
+
+  function syncPlaybackUrl() {
+    if (!window.history?.replaceState) return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("episode", String(clampEpisode(currentEpisode)));
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    } catch {
+      // Address bar sync is best-effort; playback state is still saved locally.
+    }
   }
 
   function normalizeTitle(value) {
